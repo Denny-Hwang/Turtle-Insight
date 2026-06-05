@@ -1,7 +1,7 @@
 UV ?= uv
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test validate run-api run-viewer
+.PHONY: help setup lint format test validate sync sync-check run-api run-viewer
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -23,8 +23,14 @@ format: ## Auto-format and fix with ruff
 test: ## Run pytest
 	$(UV) run pytest
 
-validate: ## R1: validate theses/ against schema/ (R1 logic lands in P1)
+validate: ## R1: validate theses/ against schema/
 	$(UV) run python -m turtle_insight.services.validation
+
+sync: ## Sync theses files into the DB index (files -> db, one-way)
+	$(UV) run python -m turtle_insight.storage.sync
+
+sync-check: ## Verify theses files are DB-round-trippable (CI)
+	$(UV) run python -m turtle_insight.storage.sync --check
 
 run-api: ## Run FastAPI locally (extra: api)
 	$(UV) run --extra api uvicorn turtle_insight.api.app:app --reload

@@ -36,3 +36,5 @@ jobs:
         run: uv sync --extra dev
       - name: Validate theses against schema
         run: make validate
+      - name: Check files <-> DB consistency
+        run: make sync-check

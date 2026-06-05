@@ -33,3 +33,9 @@
 - **맥락**: MVP는 단순·빠르게. 근거 RAG·임베딩 검색은 이후 필요.
 - **결정**: MVP SQLite + 파일. v1+에서 Postgres+pgvector로 전환(SQLAlchemy/Alembic로 진화).
 - **결과**: 초기 마찰 최소화, 확장 경로 확보.
+
+## ADR-0006 — MVP DB는 무손실 인덱스(테제 전체 저장, edges 비정규화 보류)
+- **상태**: accepted
+- **맥락**: P2 동기화의 exit criteria는 "예시 테제가 파일↔DB 왕복". 정본은 파일(ADR-0004)이지만, 왕복 검증과 조회를 위해 DB가 테제를 충실히 복원할 수 있어야 한다. TDD §4의 `theses` 컬럼 목록은 `falsifiers`/`risks`/`parents`/`children`을 포함하지 않고, 그래프는 `thesis_edges` 테이블로 분리한다.
+- **결정**: MVP에서는 `theses` 행에 `parents`/`children`/`falsifiers`/`risks`를 JSON 컬럼으로, `assets`/`evidence`를 자식 테이블로 저장해 **무손실 인덱스**로 만든다. 정규화된 `thesis_edges` 테이블은 그래프 질의가 필요해지는 시점(P5/v1.x)으로 보류한다. 파일↔DB는 단방향(`make sync`), CI(`make sync-check`)가 왕복 일관성을 검사한다.
+- **결과**: 왕복 충실도 확보·구현 단순. 그래프 탐색은 JSON의 parents/children id로 충분(P5 `/theses/{id}/graph`). edges 정규화는 RAG/대규모 그래프 질의 도입 시 재검토.
