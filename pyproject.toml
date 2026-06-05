@@ -9,6 +9,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "pyyaml>=6.0",
     "jsonschema>=4.22",
+    "sqlalchemy>=2.0",
 ]
 
 [project.optional-dependencies]
