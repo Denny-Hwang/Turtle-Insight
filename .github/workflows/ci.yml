@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # R2 — test-and-lint (CLAUDE.md §5)
+  lint-test:
+    name: R2 lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: uv sync --extra dev
+      - name: Lint (ruff + mypy)
+        run: make lint
+      - name: Test (pytest)
+        run: make test
+
+  # R1 — validate-theses (CLAUDE.md §5); real schema checks land in P1
+  validate:
+    name: R1 validate theses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: uv sync --extra dev
+      - name: Validate theses against schema
+        run: make validate

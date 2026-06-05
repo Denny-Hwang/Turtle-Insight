@@ -1,0 +1,33 @@
+# Secrets (GOLDEN RULE 6: never commit) — config via .env only
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs / tooling caches
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data / databases
+*.db
+*.sqlite
+*.sqlite3
+data/
+.cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
