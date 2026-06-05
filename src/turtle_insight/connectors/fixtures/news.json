@@ -1,0 +1,11 @@
+[
+  {
+    "id": "news-0001",
+    "url": "https://example.com/news/agentic-inference-power",
+    "published_at": "2026-05-22T00:00:00Z",
+    "summary": "Vendor keynote signals agentic inference will lift demand across memory, networking and power (link + short factual summary only; no full text stored).",
+    "tickers": [],
+    "tags": ["keynote"],
+    "raw_ref": "keynote-2026-05-22"
+  }
+]

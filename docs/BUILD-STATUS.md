@@ -6,7 +6,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P0 부트스트랩 | [x] | [x] | 레포 스캐폴드(uv/py3.12, src 41모듈, ruff+mypy, CI R1/R2) — PR #2, CI green |
 | P1 도메인 코어 | [x] | [x] | domain 모델/상태기계/캘리브레이션 + R1 검증, 단위테스트 그린, examples 검증 통과 |
 | P2 저장+동기화 | [x] | [x] | files 정본/상태이동 + SQLAlchemy sqlite_repo + make sync(+CI sync-check), 왕복 통합테스트 그린 |
-| P3 수집+추론 게이트 | [ ] | [ ] | |
+| P3 수집+추론 게이트 | [x] | [x] | 픽스처 커넥터(edgar/dart/fred/market_api/news) + inference deep/fast 게이트 + Scout, 통합/목 테스트 그린 |
 | P4 분석+게이트(씨앗 테제 active) | [ ] | [ ] | |
 | P5 제안+전달+뷰어(MVP) | [ ] | [ ] | |
 
@@ -29,3 +29,9 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 - 산출: `storage/files.py`(theses/<status>/<id>.yaml r/w + 상태이동), `sql_models.py`(SQLAlchemy), `repository.py`(인터페이스), `sqlite_repo.py`(구현), `storage/sync.py`(`make sync`/`--check`). dep: `sqlalchemy>=2.0`.
 - 변경파일: 위 storage 모듈 + Makefile(sync/sync-check) + ci.yml(sync-check) + ADR-0006 + `tests/integration/test_storage.py`.
 - 완료기준: 파일↔DB 왕복·상태이동·동기화 통합테스트 통과. MVP DB는 무손실(JSON parents/children/falsifiers/risks + assets/evidence 테이블).
+
+### P3 수집+추론 게이트 (SDD §4–5, TDD §5)
+- 목표: 라이브 호출 없는 픽스처 커넥터, 단일 추론 게이트(deep/fast), Scout 시그널 적재.
+- 산출: `connectors/base.py`(Connector+FixtureConnector+fixtures/*.json) + edgar/dart/fred/market_api/news, `services/inference.py`(deep/fast, prompt_version·토큰 로깅, 모델명 config), `agents/base.py`(Agent/AgentContext/AgentResult), `agents/scout.py`(정규화+태깅+upsert).
+- 변경파일: 위 모듈 + 5개 fixture JSON + `tests/unit/test_inference.py` + `tests/integration/test_scout.py`.
+- 완료기준: Scout 통합테스트(픽스처→시그널, 링크+요약, 멱등), inference 목 테스트 통과. 라이브 호출 0, 전문 미저장.
