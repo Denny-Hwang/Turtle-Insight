@@ -1,0 +1,10 @@
+[
+  {
+    "id": "edgar-0001",
+    "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=10-Q",
+    "published_at": "2026-05-21T00:00:00Z",
+    "summary": "10-Q highlights sustained data-center demand for accelerators and high-bandwidth memory; capex guidance raised (link + short summary).",
+    "tickers": ["NVDA"],
+    "tags": ["filing"]
+  }
+]

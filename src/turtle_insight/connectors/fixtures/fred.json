@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fred-0001",
+    "url": "https://fred.stlouisfed.org/series/CES4422000001",
+    "published_at": "2026-05-15T00:00:00Z",
+    "summary": "Electric power generation employment ticks up; grid-investment indicators trend higher.",
+    "tickers": [],
+    "tags": ["macro"]
+  }
+]
