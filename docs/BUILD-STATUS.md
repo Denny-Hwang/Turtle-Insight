@@ -7,7 +7,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P1 도메인 코어 | [x] | [x] | domain 모델/상태기계/캘리브레이션 + R1 검증, 단위테스트 그린, examples 검증 통과 |
 | P2 저장+동기화 | [x] | [x] | files 정본/상태이동 + SQLAlchemy sqlite_repo + make sync(+CI sync-check), 왕복 통합테스트 그린 |
 | P3 수집+추론 게이트 | [x] | [x] | 픽스처 커넥터(edgar/dart/fred/market_api/news) + inference deep/fast 게이트 + Scout, 통합/목 테스트 그린 |
-| P4 분석+게이트(씨앗 테제 active) | [ ] | [ ] | |
+| P4 분석+게이트(씨앗 테제 active) | [x] | [x] | Analyst(시그널→candidate)+RedTeam(verdict)+Orchestrator 1주기, 씨앗 T-2026-0100 active, eval 그린 |
 | P5 제안+전달+뷰어(MVP) | [ ] | [ ] | |
 
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
@@ -35,3 +35,9 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 - 산출: `connectors/base.py`(Connector+FixtureConnector+fixtures/*.json) + edgar/dart/fred/market_api/news, `services/inference.py`(deep/fast, prompt_version·토큰 로깅, 모델명 config), `agents/base.py`(Agent/AgentContext/AgentResult), `agents/scout.py`(정규화+태깅+upsert).
 - 변경파일: 위 모듈 + 5개 fixture JSON + `tests/unit/test_inference.py` + `tests/integration/test_scout.py`.
 - 완료기준: Scout 통합테스트(픽스처→시그널, 링크+요약, 멱등), inference 목 테스트 통과. 라이브 호출 0, 전문 미저장.
+
+### P4 분석+게이트 (AGENTS.md, guidelines)
+- 목표: Scout→Analyst→RedTeam 1주기로 씨앗 테제를 candidate→active까지. 게이트 강제.
+- 산출: `agents/analyst.py`(시그널→candidate, evidence에 signal_id 링크, falsifiers 명시; 결정적 룰베이스), `agents/redteam.py`(bear case·반증/근거 점검·편향 플래그→Review verdict), `services/orchestrator.py`(run_cycle: 게이트 통과 시 active 승격).
+- 변경파일: 위 3개 + `tests/unit/test_{analyst,redteam}.py` + `tests/evals/test_seed_pipeline.py`(placeholder 대체).
+- 완료기준: 씨앗 T-2026-0100이 RedTeam pass로 active, eval(falsifiers·dated evidence·전문 미인용) 통과. LLM 합성은 v1.x(결정성 위해 룰베이스).
