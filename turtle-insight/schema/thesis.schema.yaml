@@ -1,0 +1,71 @@
+# Turtle Insight — Thesis 스키마 (JSON Schema, YAML 표기)
+# 정본: theses/<status>/<id>.yaml 은 이 스키마를 만족해야 한다.
+# 검증: services/validation.py 와 CI(R1)가 강제.
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Thesis
+type: object
+additionalProperties: false
+required: [id, layer, horizon, title, claim, status, falsifiers, created]
+properties:
+  id:
+    type: string
+    pattern: "^T-[0-9]{4}-[0-9]{4}$"          # 예: T-2026-0001
+  layer:
+    enum: [macro, trend, chain, asset]
+  horizon:
+    enum: [short, long]                         # 단기 1-5y / 장기 5-20y
+  title: { type: string, minLength: 3 }
+  claim: { type: string, minLength: 10 }
+  conviction: { type: integer, minimum: 0, maximum: 100, default: 0 }
+  status:
+    enum: [draft, candidate, active, invalidated, realized]
+  parents:
+    type: array
+    items: { type: string, pattern: "^T-[0-9]{4}-[0-9]{4}$" }
+    default: []
+  children:
+    type: array
+    items: { type: string, pattern: "^T-[0-9]{4}-[0-9]{4}$" }
+    default: []
+  assets:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [market, ticker, role]
+      properties:
+        market: { type: string }                # "KR" | "US" | ...
+        ticker: { type: string }
+        role: { enum: [primary, secondary] }
+  evidence:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [date, source, url, summary]     # url·date 필수(승격 게이트)
+      properties:
+        date: { type: string, format: date }
+        source: { type: string }
+        url: { type: string, format: uri }
+        summary: { type: string, maxLength: 500 } # 짧은 요약만, 전문 금지
+        weight: { type: number, minimum: 0, maximum: 1, default: 0.5 }
+        signal_id: { type: [string, "null"], default: null }
+  falsifiers:                                     # 필수, 최소 1개 (반증조건)
+    type: array
+    minItems: 1
+    items: { type: string, minLength: 5 }
+  risks:
+    type: array
+    items: { type: string }
+    default: []
+  review_cadence:
+    enum: [weekly, monthly, quarterly]
+    default: monthly
+  last_reviewed: { type: [string, "null"], format: date, default: null }
+  created: { type: string, format: date-time }
+
+# 추가 불변식(코드에서 강제, 스키마 외):
+#  - status=active  ⇒ falsifiers 존재 AND 모든 evidence에 url·date AND RedTeam verdict=pass
+#  - parents/children id는 실재해야 함(고아 링크 금지) — CI(R1)가 검사
