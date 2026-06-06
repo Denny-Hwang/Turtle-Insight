@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from turtle_insight.api.app import create_app, get_repo
+from turtle_insight.config.settings import Settings
 from turtle_insight.connectors.dart import DartConnector
 from turtle_insight.connectors.edgar import EdgarConnector
 from turtle_insight.connectors.fred import FredConnector
@@ -93,6 +94,25 @@ def test_calibration_endpoint_empty_by_default(tmp_path: Path) -> None:
     card = _client(tmp_path).get("/calibration").json()
     assert card["total"] == 0
     assert card["accuracy"] == 0.0
+
+
+def _token_client(tmp_path: Path, token: str) -> TestClient:
+    repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
+    app = create_app(Settings(_env_file=None, ti_api_token=token))
+    app.dependency_overrides[get_repo] = lambda: repo
+    return TestClient(app)
+
+
+def test_no_auth_required_when_token_unset(tmp_path: Path) -> None:
+    # Default app (no TI_API_TOKEN) is open for local use.
+    assert _client(tmp_path).get("/health").status_code == 200
+
+
+def test_token_enforced_when_configured(tmp_path: Path) -> None:
+    client = _token_client(tmp_path, "secret")
+    assert client.get("/health").status_code == 401
+    assert client.get("/health", headers={"X-API-Token": "wrong"}).status_code == 401
+    assert client.get("/health", headers={"X-API-Token": "secret"}).status_code == 200
 
 
 def test_no_trading_endpoints(tmp_path: Path) -> None:
