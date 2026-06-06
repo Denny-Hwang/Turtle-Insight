@@ -10,6 +10,12 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P4 분석+게이트(씨앗 테제 active) | [x] | [x] | Analyst(시그널→candidate)+RedTeam(verdict)+Orchestrator 1주기, 씨앗 T-2026-0100 active, eval 그린 |
 | P5 제안+전달+뷰어(MVP) | [x] | [x] | Allocator/Synthesizer/Curator + FastAPI 조회 + Streamlit 뷰어, 제안·브리핑 자동생성, eval 그린 — MVP 완성 |
 
+## v1.x (MVP 이후)
+
+| 단계 | 완료 | 머지 | 결과 한 줄 |
+|---|---|---|---|
+| P6 Macro/Strategist/Market | [x] | [x] | 공용 templates + Macro(0001)/Strategist(0002)/Market(regime), run_full_cycle로 macro→trend→chain 3계층 active, eval 그린 |
+
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
 - 레포 종합: `src/turtle_insight/` 41개 모듈 존재하나 `domain/`·`storage/`·`agents/`·`connectors/`·`services/`는 전부 docstring 스텁("Implemented in P*"). 실로직은 `config/settings.py`(+`services/validation.py` R1 스텁)뿐.
 - tests: `unit/test_smoke.py` + integration/evals 플레이스홀더만. `theses/`는 `examples/`만(상태 폴더 없음).
