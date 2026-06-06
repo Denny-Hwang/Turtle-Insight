@@ -7,14 +7,16 @@ There are NO trading/order endpoints — execution is permanently out of scope
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
+from ..agents.curator import Curator
 from ..agents.market import MarketRegime
 from ..config.settings import Settings, get_settings
-from ..domain.calibration import PeriodScorecard, Prediction, Scorecard
+from ..domain.calibration import CalibrationScore, PeriodScorecard, Prediction, Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
 from ..services.advisory import (
@@ -39,6 +41,11 @@ class ThesisGraph(BaseModel):
     node: Thesis
     parents: list[Thesis]
     children: list[Thesis]
+
+
+class OutcomeIn(BaseModel):
+    realized: bool
+    note: str | None = None
 
 
 def get_repo() -> Iterator[Repository]:
@@ -126,6 +133,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/predictions")
     def predictions(repo: RepoDep) -> list[Prediction]:
         return repo.list_predictions()
+
+    @app.post("/predictions/{thesis_id}/outcome")
+    def record_outcome(thesis_id: str, body: OutcomeIn, repo: RepoDep) -> CalibrationScore:
+        # Record a realized outcome for a registered prediction (scores it). Not trading.
+        prediction = next((p for p in repo.list_predictions() if p.thesis_id == thesis_id), None)
+        if prediction is None:
+            raise HTTPException(status_code=404, detail=f"no registered prediction for {thesis_id}")
+        return Curator().record_outcome(
+            repo, prediction, realized=body.realized, now=datetime.now(), note=body.note
+        )
 
     @app.get("/market/regime")
     def market_regime(repo: RepoDep) -> MarketRegime:

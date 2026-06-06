@@ -107,6 +107,19 @@ def test_predictions_endpoint_after_trigger(tmp_path: Path) -> None:
     assert ids == {"T-2026-0001", "T-2026-0002", "T-2026-0100"}
 
 
+def test_record_outcome_scores_into_calibration(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    client.post("/agents/cycle/run")  # registers predictions (conviction 0)
+    scored = client.post("/predictions/T-2026-0100/outcome", json={"realized": False}).json()
+    assert scored["thesis_id"] == "T-2026-0100"
+    assert scored["correct"] is True  # conviction 0 (<50) predicted "not realized"
+    # the scorecard now reflects the recorded outcome
+    assert client.get("/calibration").json()["total"] == 1
+    assert (
+        client.post("/predictions/T-9999-9999/outcome", json={"realized": True}).status_code == 404
+    )
+
+
 def _token_client(tmp_path: Path, token: str) -> TestClient:
     repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
     app = create_app(Settings(_env_file=None, ti_api_token=token))
@@ -131,9 +144,11 @@ def test_no_trading_endpoints(tmp_path: Path) -> None:
     paths = app.openapi()["paths"]
     forbidden = ("order", "trade", "buy", "sell", "execute")
     assert not any(word in path.lower() for path in paths for word in forbidden)
-    # Read-only surface, except manual analysis triggers under /agents (POST).
+    # Read-only surface, except manual triggers (/agents) and outcome recording
+    # (/predictions/.../outcome) — neither is trade execution.
+    post_ok = ("/agents", "/predictions")
     for path, methods in paths.items():
-        allowed = {"get", "post"} if path.startswith("/agents") else {"get"}
+        allowed = {"get", "post"} if path.startswith(post_ok) else {"get"}
         assert set(methods).issubset(allowed)
 
 
