@@ -9,11 +9,11 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from ..agents.market import MarketRegime
-from ..config.settings import get_settings
+from ..config.settings import Settings, get_settings
 from ..domain.calibration import Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
@@ -42,8 +42,19 @@ def get_repo() -> Iterator[Repository]:
 RepoDep = Annotated[Repository, Depends(get_repo)]
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="Turtle Insight (local, read-only)", version="0.1.0")
+def create_app(settings: Settings | None = None) -> FastAPI:
+    config = settings or get_settings()
+
+    def require_token(x_api_token: Annotated[str | None, Header()] = None) -> None:
+        # Local single-user auth: enforced only when TI_API_TOKEN is configured.
+        if config.ti_api_token and x_api_token != config.ti_api_token:
+            raise HTTPException(status_code=401, detail="invalid or missing API token")
+
+    app = FastAPI(
+        title="Turtle Insight (local, read-only)",
+        version="0.1.0",
+        dependencies=[Depends(require_token)],
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:
