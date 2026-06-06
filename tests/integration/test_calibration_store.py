@@ -51,6 +51,22 @@ def test_prediction_round_trip_is_upsert(tmp_path: Path) -> None:
     assert rows[0].conviction == 75
 
 
+def test_curator_record_outcome_scores_stored_prediction(tmp_path: Path) -> None:
+    from turtle_insight.domain.calibration import Prediction
+
+    repo = _repo(tmp_path)
+    prediction = Prediction(
+        thesis_id="T-2026-0001",
+        statement="demand rises",
+        by_date=date(2030, 1, 1),
+        conviction=80,
+        created=_NOW,
+    )
+    result = Curator().record_outcome(repo, prediction, realized=True, now=datetime(2027, 1, 1))
+    assert result.correct is True  # conviction 80 (>=50) and realized
+    assert [s.thesis_id for s in repo.list_scores()] == ["T-2026-0001"]
+
+
 def test_curator_score_and_record_persists(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     thesis = Thesis(

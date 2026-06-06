@@ -79,6 +79,23 @@ class Curator(Agent):
             count += 1
         return count
 
+    def record_outcome(
+        self,
+        repo: CalibrationRepository,
+        prediction: Prediction,
+        *,
+        realized: bool,
+        now: datetime,
+        note: str | None = None,
+    ) -> CalibrationScore:
+        """Score a registered prediction against its realized outcome and persist it."""
+        outcome = Outcome(
+            thesis_id=prediction.thesis_id, realized=realized, observed_at=now, note=note
+        )
+        result = score(prediction, outcome, scored_at=now)
+        repo.add_score(result)
+        return result
+
     def run(self, ctx: AgentContext) -> AgentResult:
         if ctx.thesis_repo is None:
             raise ValueError("Curator requires a thesis_repo in the context")
