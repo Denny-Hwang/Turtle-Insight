@@ -51,10 +51,26 @@ turtle-insight/
 
 > 기존 `polaris-masterplan-v0.1.md`는 코드네임을 **Turtle Insight**로 갱신해 `docs/masterplan-v0.1.md`로 추가할 것. 본 레포의 설계 권위 문서는 `SDD.md`이며, master plan은 비전·기원 기록으로 보존한다.
 
+## 빠른 시작 (Quickstart)
+
+```bash
+make setup            # 의존성 설치(uv) + pre-commit 훅
+make analyze          # 분석 1주기를 DB에 적재 (macro→trend→chain, 픽스처 기반)
+make run-viewer       # Streamlit 뷰어 (그래프·테제 상세·제안·브리핑)
+# 또는
+make run-api          # FastAPI 조회 API (/theses, /theses/{id}/graph, /proposals/latest,
+                      #                    /briefs/{daily,weekly,monthly}, /calibration, /market/regime)
+```
+
+> 뷰어가 "No theses in the DB yet"를 보이면 먼저 **`make analyze`** 를 실행해 DB(`TI_DB_URL`, 기본 `sqlite:///ti.db`)를 채운다.
+
+기타 명령: `make lint` · `make test` · `make validate`(R1) · `make sync`/`sync-check` · `make scorecard`(R4) · `make migrate`(Alembic) · `make up`(docker compose: postgres+redis).
+
 ## 상태
 
-- 단계: **P0 부트스트랩 이전** (계획 문서 확정 단계)
-- 다음: `claude/prompts/build-sequence.md`의 **P0**부터 Claude Code로 실행.
+- **MVP(P0–P5) 완료** + **v1.x**: P6 3계층 자동화(Macro/Strategist/Market), P7 캘리브레이션·스코어카드,
+  P8 데일리/먼슬리 브리핑, P9 시장국면 반영, P10 PostgreSQL+pgvector(CI 검증), P11 LLM 어댑터(Ollama/Anthropic).
+- 진행 추적: `docs/BUILD-STATUS.md`.
 
 ## 스택 요약
 
