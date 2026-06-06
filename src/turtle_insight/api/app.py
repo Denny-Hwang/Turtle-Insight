@@ -16,7 +16,13 @@ from ..config.settings import get_settings
 from ..domain.calibration import Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
-from ..services.advisory import calibration_scorecard, latest_proposal, weekly_brief
+from ..services.advisory import (
+    calibration_scorecard,
+    daily_brief,
+    latest_proposal,
+    monthly_brief,
+    weekly_brief,
+)
 from ..storage.repository import Repository
 from ..storage.sqlite_repo import SqliteRepository
 
@@ -78,9 +84,17 @@ def create_app() -> FastAPI:
     def proposals_latest(repo: RepoDep) -> Proposal:
         return latest_proposal(repo)
 
+    @app.get("/briefs/daily")
+    def briefs_daily(repo: RepoDep) -> Brief:
+        return daily_brief(repo)
+
     @app.get("/briefs/weekly")
     def briefs_weekly(repo: RepoDep) -> Brief:
         return weekly_brief(repo)
+
+    @app.get("/briefs/monthly")
+    def briefs_monthly(repo: RepoDep) -> Brief:
+        return monthly_brief(repo)
 
     @app.get("/calibration")
     def calibration(repo: RepoDep) -> Scorecard:
