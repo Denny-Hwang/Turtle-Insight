@@ -28,8 +28,9 @@ def _esc(text: str) -> str:
     return text.replace('"', '\\"')
 
 
-def build_graph_dot(theses: Iterable[Thesis]) -> str:
-    """Build a Graphviz DOT graph: layer-coloured nodes, parent+child edges."""
+def build_graph_dot(theses: Iterable[Thesis], *, include_assets: bool = True) -> str:
+    """Build a Graphviz DOT graph: layer-coloured thesis nodes, parent+child
+    edges, and (optionally) asset nodes linked from their theses."""
     items = list(theses)
     known = {t.id for t in items}
     lines = [
@@ -53,6 +54,20 @@ def build_graph_dot(theses: Iterable[Thesis]) -> str:
         for child in thesis.children:
             if child in known:
                 edges.add((thesis.id, child))
+
+    if include_assets:
+        asset_ids: set[str] = set()
+        asset_edges: set[tuple[str, str]] = set()
+        for thesis in items:
+            for asset in thesis.assets:
+                aid = f"{asset.market}:{asset.ticker}"
+                asset_ids.add(aid)
+                asset_edges.add((thesis.id, aid))
+        for aid in sorted(asset_ids):
+            lines.append(f'  "{aid}" [shape=ellipse, fillcolor="#ffca3a", fontcolor=black];')
+        for src, dst in sorted(asset_edges):
+            lines.append(f'  "{src}" -> "{dst}" [style=dashed];')
+
     for src, dst in sorted(edges):
         lines.append(f'  "{src}" -> "{dst}";')
     lines.append("}")

@@ -51,10 +51,21 @@ def test_build_graph_dot_has_nodes_edges_and_layer_colors() -> None:
 def test_build_graph_dot_skips_dangling_edges() -> None:
     # parent not present in the visible set -> no edge emitted
     dot = build_graph_dot(
-        [_thesis("T-2026-0100", Layer.chain, parents=["T-2026-9999"], children=[])]
+        [_thesis("T-2026-0100", Layer.chain, parents=["T-2026-9999"], children=[])],
+        include_assets=False,
     )
     assert "->" not in dot
     assert '"T-2026-0100"' in dot
+
+
+def test_build_graph_dot_includes_asset_nodes_when_enabled() -> None:
+    chain = _thesis("T-2026-0100", Layer.chain, parents=[], children=[]).model_copy(
+        update={"assets": [AssetLink(market="KR", ticker="000660", role=AssetRole.primary)]}
+    )
+    with_assets = build_graph_dot([chain], include_assets=True)
+    assert '"KR:000660"' in with_assets
+    assert '"T-2026-0100" -> "KR:000660"' in with_assets
+    assert "KR:000660" not in build_graph_dot([chain], include_assets=False)
 
 
 def test_regime_badge_contains_icon_and_leader() -> None:
