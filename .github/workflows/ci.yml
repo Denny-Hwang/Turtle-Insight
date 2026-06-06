@@ -38,3 +38,37 @@ jobs:
         run: make validate
       - name: Check files <-> DB consistency
         run: make sync-check
+
+  # PostgreSQL + pgvector compatibility (v1+ storage path)
+  pg-compat:
+    name: PG compat + pgvector
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: turtle
+          POSTGRES_PASSWORD: turtle
+          POSTGRES_DB: turtle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U turtle"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      TI_DB_URL: postgresql+psycopg://turtle:turtle@localhost:5432/turtle
+      TI_TEST_PG_URL: postgresql+psycopg://turtle:turtle@localhost:5432/turtle
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - name: Install deps (dev + pg)
+        run: uv sync --extra dev --extra pg
+      - name: Apply migrations
+        run: uv run --extra pg alembic upgrade head
+      - name: Postgres + pgvector tests
+        run: uv run pytest tests/integration/test_postgres.py -v
