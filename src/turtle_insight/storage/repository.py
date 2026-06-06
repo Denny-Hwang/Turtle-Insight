@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from ..domain.calibration import CalibrationScore
 from ..domain.signal import Signal
 from ..domain.thesis import Status, Thesis
 
@@ -38,3 +39,15 @@ class SignalRepository(ABC):
 
     @abstractmethod
     def list_signals(self, *, tag: str | None = None) -> list[Signal]: ...
+
+
+class CalibrationRepository(ABC):
+    @abstractmethod
+    def add_score(self, score: CalibrationScore) -> None: ...
+
+    @abstractmethod
+    def list_scores(self, *, thesis_id: str | None = None) -> list[CalibrationScore]: ...
+
+
+class Repository(ThesisRepository, SignalRepository, CalibrationRepository, ABC):
+    """Combined repository surface (theses + signals + calibration)."""

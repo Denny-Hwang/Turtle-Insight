@@ -70,3 +70,30 @@ def score(
         brier=brier_score(prediction.conviction, outcome.realized),
         scored_at=scored_at or outcome.observed_at,
     )
+
+
+class Scorecard(BaseModel):
+    """Aggregate calibration over a set of scores (track record)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    correct: int
+    accuracy: float
+    mean_brier: float
+    generated_at: datetime
+
+
+def summarize(scores: list[CalibrationScore], *, now: datetime) -> Scorecard:
+    """Aggregate scores into a scorecard (accuracy + mean Brier)."""
+    total = len(scores)
+    correct = sum(1 for s in scores if s.correct)
+    accuracy = correct / total if total else 0.0
+    mean_brier = sum(s.brier for s in scores) / total if total else 0.0
+    return Scorecard(
+        total=total,
+        correct=correct,
+        accuracy=accuracy,
+        mean_brier=mean_brier,
+        generated_at=now,
+    )

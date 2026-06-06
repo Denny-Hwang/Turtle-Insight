@@ -73,6 +73,12 @@ def test_proposal_and_brief_endpoints(tmp_path: Path) -> None:
     assert "Weekly Brief" in brief["body_md"]
 
 
+def test_calibration_endpoint_empty_by_default(tmp_path: Path) -> None:
+    card = _client(tmp_path).get("/calibration").json()
+    assert card["total"] == 0
+    assert card["accuracy"] == 0.0
+
+
 def test_no_trading_endpoints(tmp_path: Path) -> None:
     app = _client(tmp_path).app
     paths = app.openapi()["paths"]
