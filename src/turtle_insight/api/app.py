@@ -13,10 +13,11 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
 from ..config.settings import get_settings
+from ..domain.calibration import Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
-from ..services.advisory import latest_proposal, weekly_brief
-from ..storage.repository import ThesisRepository
+from ..services.advisory import calibration_scorecard, latest_proposal, weekly_brief
+from ..storage.repository import Repository
 from ..storage.sqlite_repo import SqliteRepository
 
 
@@ -26,11 +27,11 @@ class ThesisGraph(BaseModel):
     children: list[Thesis]
 
 
-def get_repo() -> Iterator[ThesisRepository]:
+def get_repo() -> Iterator[Repository]:
     yield SqliteRepository.from_url(get_settings().ti_db_url)
 
 
-RepoDep = Annotated[ThesisRepository, Depends(get_repo)]
+RepoDep = Annotated[Repository, Depends(get_repo)]
 
 
 def create_app() -> FastAPI:
@@ -80,6 +81,10 @@ def create_app() -> FastAPI:
     @app.get("/briefs/weekly")
     def briefs_weekly(repo: RepoDep) -> Brief:
         return weekly_brief(repo)
+
+    @app.get("/calibration")
+    def calibration(repo: RepoDep) -> Scorecard:
+        return calibration_scorecard(repo)
 
     return app
 

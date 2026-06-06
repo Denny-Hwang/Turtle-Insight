@@ -82,3 +82,15 @@ class SignalRow(Base):
     raw_ref: Mapped[str | None] = mapped_column(default=None)
     tickers: Mapped[list[str]] = mapped_column(JSON, default=list)
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+
+class CalibrationRow(Base):
+    __tablename__ = "calibration"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    thesis_id: Mapped[str] = mapped_column(String)
+    conviction: Mapped[int] = mapped_column()
+    realized: Mapped[bool] = mapped_column()
+    correct: Mapped[bool] = mapped_column()
+    brier: Mapped[float] = mapped_column()
+    scored_at: Mapped[datetime] = mapped_column()

@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.orm import Session, selectinload
 
+from ..domain.calibration import CalibrationScore
 from ..domain.signal import Signal
 from ..domain.thesis import (
     AssetLink,
@@ -16,8 +17,8 @@ from ..domain.thesis import (
     Status,
     Thesis,
 )
-from .repository import SignalRepository, ThesisRepository
-from .sql_models import AssetRow, Base, EvidenceRow, SignalRow, ThesisRow
+from .repository import Repository
+from .sql_models import AssetRow, Base, CalibrationRow, EvidenceRow, SignalRow, ThesisRow
 
 
 def _to_thesis_row(thesis: Thesis) -> ThesisRow:
@@ -112,8 +113,30 @@ def _to_signal(row: SignalRow) -> Signal:
     )
 
 
-class SqliteRepository(ThesisRepository, SignalRepository):
-    """Combined thesis + signal repository backed by a SQLAlchemy engine."""
+def _to_calibration_row(score: CalibrationScore) -> CalibrationRow:
+    return CalibrationRow(
+        thesis_id=score.thesis_id,
+        conviction=score.conviction,
+        realized=score.realized,
+        correct=score.correct,
+        brier=score.brier,
+        scored_at=score.scored_at,
+    )
+
+
+def _to_calibration_score(row: CalibrationRow) -> CalibrationScore:
+    return CalibrationScore(
+        thesis_id=row.thesis_id,
+        conviction=row.conviction,
+        realized=row.realized,
+        correct=row.correct,
+        brier=row.brier,
+        scored_at=row.scored_at,
+    )
+
+
+class SqliteRepository(Repository):
+    """Thesis + signal + calibration repository backed by a SQLAlchemy engine."""
 
     def __init__(self, engine: Engine) -> None:
         self._engine = engine
@@ -182,3 +205,16 @@ class SqliteRepository(ThesisRepository, SignalRepository):
         if tag is not None:
             signals = [s for s in signals if tag in s.tags]
         return signals
+
+    # --- CalibrationRepository ---
+    def add_score(self, score: CalibrationScore) -> None:
+        with Session(self._engine) as session:
+            session.add(_to_calibration_row(score))
+            session.commit()
+
+    def list_scores(self, *, thesis_id: str | None = None) -> list[CalibrationScore]:
+        stmt = select(CalibrationRow).order_by(CalibrationRow.scored_at, CalibrationRow.id)
+        if thesis_id is not None:
+            stmt = stmt.where(CalibrationRow.thesis_id == thesis_id)
+        with Session(self._engine) as session:
+            return [_to_calibration_score(row) for row in session.scalars(stmt).all()]

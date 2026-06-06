@@ -15,6 +15,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | 단계 | 완료 | 머지 | 결과 한 줄 |
 |---|---|---|---|
 | P6 Macro/Strategist/Market | [x] | [x] | 공용 templates + Macro(0001)/Strategist(0002)/Market(regime), run_full_cycle로 macro→trend→chain 3계층 active, eval 그린 |
+| P7 캘리브레이션 영속화+스코어카드 | [x] | [x] | calibration 테이블/repo + Curator scorecard + advisory/`/calibration` + `make scorecard`(R4), 단위/통합 그린 |
 
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
 - 레포 종합: `src/turtle_insight/` 41개 모듈 존재하나 `domain/`·`storage/`·`agents/`·`connectors/`·`services/`는 전부 docstring 스텁("Implemented in P*"). 실로직은 `config/settings.py`(+`services/validation.py` R1 스텁)뿐.

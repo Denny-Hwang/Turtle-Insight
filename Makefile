@@ -1,7 +1,7 @@
 UV ?= uv
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test validate sync sync-check run-api run-viewer
+.PHONY: help setup lint format test validate sync sync-check scorecard run-api run-viewer
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -31,6 +31,9 @@ sync: ## Sync theses files into the DB index (files -> db, one-way)
 
 sync-check: ## Verify theses files are DB-round-trippable (CI)
 	$(UV) run python -m turtle_insight.storage.sync --check
+
+scorecard: ## R4: print the calibration track-record scorecard
+	$(UV) run python -m turtle_insight.services.reporting
 
 run-api: ## Run FastAPI locally (extra: api)
 	$(UV) run --extra api uvicorn turtle_insight.api.app:app --reload

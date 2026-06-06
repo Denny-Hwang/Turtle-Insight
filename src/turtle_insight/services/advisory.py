@@ -10,9 +10,10 @@ from datetime import datetime
 
 from ..agents.allocator import Allocator
 from ..agents.synthesizer import Synthesizer
+from ..domain.calibration import Scorecard, summarize
 from ..domain.proposal import Brief, Constraints, Proposal
 from ..domain.thesis import Horizon, Status
-from ..storage.repository import ThesisRepository
+from ..storage.repository import CalibrationRepository, ThesisRepository
 
 
 def default_constraints() -> Constraints:
@@ -40,3 +41,7 @@ def weekly_brief(
     active = repo.list_theses(status=Status.active)
     proposal = Allocator(constraints or default_constraints()).propose(active, now=when)
     return Synthesizer().weekly(active, proposal, now=when)
+
+
+def calibration_scorecard(repo: CalibrationRepository, *, now: datetime | None = None) -> Scorecard:
+    return summarize(repo.list_scores(), now=now or datetime.now())

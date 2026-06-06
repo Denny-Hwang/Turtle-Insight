@@ -9,8 +9,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import ClassVar
 
-from ..domain.calibration import CalibrationScore, Outcome, Prediction, score
+from ..domain.calibration import CalibrationScore, Outcome, Prediction, Scorecard, score, summarize
 from ..domain.thesis import Status, Thesis
+from ..storage.repository import CalibrationRepository
 from .base import Agent, AgentContext, AgentResult
 
 # Rough target horizons for predictions (days), by thesis horizon.
@@ -52,6 +53,21 @@ class Curator(Agent):
 
     def archivable(self, theses: list[Thesis]) -> list[str]:
         return [t.id for t in theses if t.status in (Status.invalidated, Status.realized)]
+
+    def score_and_record(
+        self,
+        repo: CalibrationRepository,
+        thesis: Thesis,
+        outcome: Outcome,
+        *,
+        now: datetime | None = None,
+    ) -> CalibrationScore:
+        result = score_thesis(thesis, outcome, now=now)
+        repo.add_score(result)
+        return result
+
+    def scorecard(self, scores: list[CalibrationScore], *, now: datetime) -> Scorecard:
+        return summarize(scores, now=now)
 
     def run(self, ctx: AgentContext) -> AgentResult:
         if ctx.thesis_repo is None:
