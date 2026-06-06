@@ -22,6 +22,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P11 로컬 모델 어댑터 | [x] | [x] | `services/llm_clients.py`(OllamaClient httpx / AnthropicClient 주입형) + build_client/build_inference + `llm` extra, 목 테스트(MockTransport/가짜 SDK) 그린 |
 | P12 analyze CLI(DB 적재) | [x] | [x] | `make analyze`(설정 DB에 full 1주기 적재) → 뷰어/API 데이터 공급. 통합테스트 그린 |
 | P13 정본 파일 내보내기 | [x] | [x] | `analyze --write-files`로 active 테제를 `theses/<status>/*.yaml`(content-as-code, ADR-0004) 기록 → R1/sync 커버. tmp 검증 그린 |
+| P14 뷰어 시각화 개선 | [x] | [x] | `viewer/render.py`(순수·테스트) — 계층색 그래프(부모+자식 엣지), 국면 배지, 스코어카드 metric, 제안 표. 단위테스트 그린 |
 
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
 - 레포 종합: `src/turtle_insight/` 41개 모듈 존재하나 `domain/`·`storage/`·`agents/`·`connectors/`·`services/`는 전부 docstring 스텁("Implemented in P*"). 실로직은 `config/settings.py`(+`services/validation.py` R1 스텁)뿐.
