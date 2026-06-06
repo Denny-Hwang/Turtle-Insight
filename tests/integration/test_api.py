@@ -120,5 +120,19 @@ def test_no_trading_endpoints(tmp_path: Path) -> None:
     paths = app.openapi()["paths"]
     forbidden = ("order", "trade", "buy", "sell", "execute")
     assert not any(word in path.lower() for path in paths for word in forbidden)
-    for methods in paths.values():
-        assert set(methods).issubset({"get"})  # read-only surface only
+    # Read-only surface, except manual analysis triggers under /agents (POST).
+    for path, methods in paths.items():
+        allowed = {"get", "post"} if path.startswith("/agents") else {"get"}
+        assert set(methods).issubset(allowed)
+
+
+def test_agent_trigger_runs_full_cycle(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    body = client.post("/agents/cycle/run").json()
+    assert set(body["activated"]) == {"T-2026-0001", "T-2026-0002", "T-2026-0100"}
+
+
+def test_agent_trigger_mvp_and_unknown(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    assert client.post("/agents/mvp/run").json()["activated"] == ["T-2026-0100"]
+    assert client.post("/agents/nope/run").status_code == 404

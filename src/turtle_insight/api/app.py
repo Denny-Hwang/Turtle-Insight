@@ -25,8 +25,13 @@ from ..services.advisory import (
     monthly_brief,
     weekly_brief,
 )
+from ..services.orchestrator import CycleResult
+from ..services.pipeline import analyze
 from ..storage.repository import Repository
 from ..storage.sqlite_repo import SqliteRepository
+
+# Manual-trigger cycles: name -> run the full 3-layer cycle (else MVP cycle).
+_AGENT_CYCLES: dict[str, bool] = {"cycle": True, "mvp": False}
 
 
 class ThesisGraph(BaseModel):
@@ -116,6 +121,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/market/regime")
     def market_regime(repo: RepoDep) -> MarketRegime:
         return current_regime(repo)
+
+    @app.post("/agents/{name}/run")
+    def run_agent(name: str, repo: RepoDep) -> CycleResult:
+        # Manual trigger of an analysis cycle (TDD §6). NOT trade execution.
+        if name not in _AGENT_CYCLES:
+            raise HTTPException(
+                status_code=404,
+                detail=f"unknown agent/cycle '{name}' (use {sorted(_AGENT_CYCLES)})",
+            )
+        return analyze(repo, full=_AGENT_CYCLES[name])
 
     return app
 
