@@ -1,7 +1,7 @@
 UV ?= uv
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test validate sync sync-check scorecard run-api run-viewer
+.PHONY: help setup lint format test validate sync sync-check scorecard migrate up run-api run-viewer
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -34,6 +34,12 @@ sync-check: ## Verify theses files are DB-round-trippable (CI)
 
 scorecard: ## R4: print the calibration track-record scorecard
 	$(UV) run python -m turtle_insight.services.reporting
+
+migrate: ## Apply DB migrations (alembic upgrade head; respects TI_DB_URL)
+	$(UV) run --extra pg alembic upgrade head
+
+up: ## Start backing services (postgres + redis) via docker compose
+	docker compose up -d
 
 run-api: ## Run FastAPI locally (extra: api)
 	$(UV) run --extra api uvicorn turtle_insight.api.app:app --reload

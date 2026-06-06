@@ -20,6 +20,11 @@ api = [
 viewer = [
     "streamlit>=1.36",
 ]
+pg = [
+    # PostgreSQL driver (SQLAlchemy uses it via the postgresql+psycopg URL).
+    # The pgvector extension is provided by the database image (pgvector/pgvector).
+    "psycopg[binary]>=3.2",
+]
 dev = [
     "pytest>=8.2",
     "ruff>=0.5",
@@ -30,6 +35,7 @@ dev = [
     # API is a core MVP surface: keep it available for type-checking and tests.
     "fastapi>=0.111",
     "httpx>=0.27",
+    "alembic>=1.13",
 ]
 
 [build-system]
@@ -43,6 +49,7 @@ packages = ["src/turtle_insight"]
 target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
+extend-exclude = ["alembic"]
 
 [tool.ruff.lint]
 # E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: bugbear

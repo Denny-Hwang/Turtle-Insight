@@ -45,3 +45,9 @@
 - **맥락**: v1.x에서 상위(Macro)·기본(Strategist)·기술(Market) 계층을 자동화해 macro→trend→chain 그래프를 완성해야 한다. Macro/Strategist는 테제를, Market은 "기술/시장 신호"를 산출(AGENTS.md). MVP의 결정성(CI 재현성)을 유지해야 한다.
 - **결정**: Macro/Strategist/Analyst는 공용 `agents/templates.py`(ThesisTemplate+build_candidate+synthesize)로 **결정적 룰베이스** 합성(시그널 매칭→evidence 링크, falsifiers 명시). 계층 간 parent/child 링크로 그래프 연결(0001→0002→0100). Market은 테제가 아니라 **파생 시장국면 신호**(regime·KR/US 상대강도, 링크+요약)를 `signals`에 적재. `Orchestrator.run_full_cycle`이 Scout→Macro→Strategist→Analyst→Market→RedTeam→승격을 구동(`run_cycle`은 MVP 호환 유지). LLM 합성은 이후.
 - **결과**: 3계층이 게이트를 통과해 active가 되는 연결 그래프 자동 생성. 기존 P0–P5 테스트 불변(run_cycle 유지). Market 신호는 추후 Allocator 국면 반영에 활용 가능.
+
+## ADR-0008 — PostgreSQL + pgvector 전환 경로 (v1+)
+- **상태**: accepted
+- **맥락**: ADR-0005대로 v1+는 Postgres + pgvector(근거 RAG). 단일 코드베이스가 SQLite(dev)와 Postgres(v1+)를 모두 지원하고, 스키마 진화는 Alembic으로 추적해야 한다. CI에서 결정적으로 검증 가능해야 한다.
+- **결정**: (1) 리포지토리는 SQLAlchemy 엔진 기반이라 `from_url`로 SQLite/Postgres 공용 — 관계형 코어 테이블은 두 DB에서 동일. (2) 마이그레이션은 Alembic(`alembic upgrade head`, `make migrate`); 초기 리비전은 모델 메타데이터로 테이블 생성(이후 컬럼 단위 autogenerate). (3) **pgvector는 Postgres 전용**: `storage/rag.py`의 `VectorStore`가 `vector` 확장+`embeddings` 테이블을 별도 관리(공용 Base 밖). 벡터는 텍스트로 전달 후 `::vector` 캐스트 → 추가 파이썬 드라이버 의존 없음(psycopg만). 임베딩은 외부 모델이 공급. (4) CI `pg-compat` 잡이 pgvector 이미지 서비스로 마이그레이션+왕복+근접검색을 검증; 로컬 SQLite 테스트는 `TI_TEST_PG_URL` 없으면 skip. docker-compose로 postgres+redis 제공.
+- **결과**: SQLite 경로 무변경(회귀 없음)으로 Postgres+pgvector를 추가. RAG 검색 substrate 확보. 임베딩 모델 연동·시계열 시세는 후속.
