@@ -13,7 +13,7 @@ from ..agents.synthesizer import Synthesizer
 from ..domain.calibration import Scorecard, summarize
 from ..domain.proposal import Brief, Constraints, Proposal
 from ..domain.thesis import Horizon, Status
-from ..storage.repository import CalibrationRepository, ThesisRepository
+from ..storage.repository import CalibrationRepository, Repository, ThesisRepository
 
 
 def default_constraints() -> Constraints:
@@ -45,3 +45,24 @@ def weekly_brief(
 
 def calibration_scorecard(repo: CalibrationRepository, *, now: datetime | None = None) -> Scorecard:
     return summarize(repo.list_scores(), now=now or datetime.now())
+
+
+def daily_brief(repo: Repository, *, now: datetime | None = None) -> Brief:
+    when = now or datetime.now()
+    active = repo.list_theses(status=Status.active)
+    regime_signal = repo.get_signal("market-regime")
+    regime = regime_signal.summary if regime_signal is not None else None
+    return Synthesizer().daily(active, now=when, regime=regime)
+
+
+def monthly_brief(
+    repo: Repository,
+    constraints: Constraints | None = None,
+    *,
+    now: datetime | None = None,
+) -> Brief:
+    when = now or datetime.now()
+    active = repo.list_theses(status=Status.active)
+    proposal = Allocator(constraints or default_constraints()).propose(active, now=when)
+    scorecard = summarize(repo.list_scores(), now=when)
+    return Synthesizer().monthly(active, proposal, scorecard, now=when)

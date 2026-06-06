@@ -1,8 +1,8 @@
-"""Synthesizer agent: weekly briefing in Markdown.
+"""Synthesizer agent: daily / weekly / monthly briefings in Markdown.
 
 Uses links + short summaries only (GOLDEN RULE 5); never reproduces full text.
 Output is a suggestion-shaped brief with an explicit decision-support
-disclaimer (GOLDEN RULE 2).
+disclaimer (GOLDEN RULE 2). Monthly briefs include the calibration scorecard.
 """
 
 from __future__ import annotations
@@ -10,9 +10,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import ClassVar
 
+from ..domain.calibration import Scorecard
 from ..domain.proposal import Brief, BriefKind, Proposal
 from ..domain.thesis import Status, Thesis
 from .base import Agent, AgentContext, AgentResult
+
+_DISCLAIMER = "_Decision-support only. Not investment advice; no orders are placed._"
 
 
 def _thesis_section(thesis: Thesis) -> tuple[list[str], list[str]]:
@@ -35,7 +38,7 @@ def _thesis_section(thesis: Thesis) -> tuple[list[str], list[str]]:
 
 def _proposal_section(proposal: Proposal | None) -> list[str]:
     if proposal is None or not proposal.items:
-        return ["_No active proposals this week._"]
+        return ["_No active proposals this period._"]
     lines = ["### Proposal (suggestions — not buy/sell instructions)"]
     for item in proposal.items:
         lines.append(
@@ -48,15 +51,36 @@ def _proposal_section(proposal: Proposal | None) -> list[str]:
     return lines
 
 
+def _scorecard_section(scorecard: Scorecard) -> list[str]:
+    return [
+        f"- Track record: {scorecard.correct}/{scorecard.total} correct "
+        f"(accuracy {scorecard.accuracy:.0%}), mean Brier {scorecard.mean_brier:.3f}.",
+    ]
+
+
+def _dedupe(sources: list[str]) -> list[str]:
+    deduped: list[str] = []
+    for src in sources:
+        if src not in deduped:
+            deduped.append(src)
+    return deduped
+
+
 class Synthesizer(Agent):
     name: ClassVar[str] = "synthesizer"
 
-    def weekly(
-        self, theses: list[Thesis], proposal: Proposal | None = None, *, now: datetime
+    def _compose(
+        self,
+        kind: BriefKind,
+        heading: str,
+        theses: list[Thesis],
+        *,
+        proposal: Proposal | None,
+        scorecard: Scorecard | None,
+        now: datetime,
     ) -> Brief:
-        parts = [f"# Turtle Insight — Weekly Brief ({now.date().isoformat()})", ""]
+        parts = [f"# Turtle Insight — {heading} ({now.date().isoformat()})", "", "## Active theses"]
         sources: list[str] = []
-        parts.append("## Active theses")
         if theses:
             for thesis in theses:
                 section, srcs = _thesis_section(thesis)
@@ -64,18 +88,44 @@ class Synthesizer(Agent):
                 sources.extend(srcs)
         else:
             parts.append("_No active theses yet._")
-        parts.append("")
-        parts.append("## Advisory")
-        parts.extend(_proposal_section(proposal))
-        parts.append("")
-        parts.append("---")
-        parts.append("_Decision-support only. Not investment advice; no orders are placed._")
+        if scorecard is not None:
+            parts.extend(["", "## Calibration scorecard", *_scorecard_section(scorecard)])
+        parts.extend(["", "## Advisory", *_proposal_section(proposal), "", "---", _DISCLAIMER])
+        return Brief(kind=kind, created=now, body_md="\n".join(parts), sources=_dedupe(sources))
 
-        deduped: list[str] = []
-        for src in sources:
-            if src not in deduped:
-                deduped.append(src)
-        return Brief(kind=BriefKind.weekly, created=now, body_md="\n".join(parts), sources=deduped)
+    def weekly(
+        self, theses: list[Thesis], proposal: Proposal | None = None, *, now: datetime
+    ) -> Brief:
+        return self._compose(
+            BriefKind.weekly, "Weekly Brief", theses, proposal=proposal, scorecard=None, now=now
+        )
+
+    def monthly(
+        self,
+        theses: list[Thesis],
+        proposal: Proposal | None = None,
+        scorecard: Scorecard | None = None,
+        *,
+        now: datetime,
+    ) -> Brief:
+        return self._compose(
+            BriefKind.monthly,
+            "Monthly Review",
+            theses,
+            proposal=proposal,
+            scorecard=scorecard,
+            now=now,
+        )
+
+    def daily(self, theses: list[Thesis], *, now: datetime, regime: str | None = None) -> Brief:
+        parts = [f"# Turtle Insight — Daily Pulse ({now.date().isoformat()})", ""]
+        if regime:
+            parts.append(f"- Market: {regime}")
+        parts.append(f"- Active theses: {len(theses)}")
+        for thesis in theses:
+            parts.append(f"- {thesis.id} · {thesis.title} (conviction {thesis.conviction}/100)")
+        parts.extend(["", "---", _DISCLAIMER])
+        return Brief(kind=BriefKind.daily, created=now, body_md="\n".join(parts), sources=[])
 
     def run(self, ctx: AgentContext) -> AgentResult:
         if ctx.thesis_repo is None:

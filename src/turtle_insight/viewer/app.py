@@ -10,7 +10,12 @@ from __future__ import annotations
 import streamlit as st
 
 from turtle_insight.config.settings import get_settings
-from turtle_insight.services.advisory import latest_proposal, weekly_brief
+from turtle_insight.services.advisory import (
+    daily_brief,
+    latest_proposal,
+    monthly_brief,
+    weekly_brief,
+)
 from turtle_insight.storage.sqlite_repo import SqliteRepository
 
 
@@ -71,8 +76,15 @@ def main() -> None:
         st.write(f"- bear: {item.scenarios.bear}")
         st.write(f"- sizing: {item.sizing_rationale}")
 
-    st.header("Weekly brief")
-    st.markdown(weekly_brief(repo).body_md)
+    st.header("Briefings")
+    kind = st.selectbox("Brief kind", ["daily", "weekly", "monthly"], index=1)
+    if kind == "daily":
+        brief = daily_brief(repo)
+    elif kind == "monthly":
+        brief = monthly_brief(repo)
+    else:
+        brief = weekly_brief(repo)
+    st.markdown(brief.body_md)
 
 
 if __name__ == "__main__":

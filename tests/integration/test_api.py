@@ -73,6 +73,16 @@ def test_proposal_and_brief_endpoints(tmp_path: Path) -> None:
     assert "Weekly Brief" in brief["body_md"]
 
 
+def test_daily_and_monthly_brief_endpoints(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    daily = client.get("/briefs/daily").json()
+    assert daily["kind"] == "daily"
+    assert "Daily Pulse" in daily["body_md"]
+    monthly = client.get("/briefs/monthly").json()
+    assert monthly["kind"] == "monthly"
+    assert "Calibration scorecard" in monthly["body_md"]
+
+
 def test_calibration_endpoint_empty_by_default(tmp_path: Path) -> None:
     card = _client(tmp_path).get("/calibration").json()
     assert card["total"] == 0
