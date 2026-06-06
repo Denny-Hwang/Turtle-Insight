@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     ti_deep_model: str | None = None  # TI_DEEP_MODEL (Claude / deep tier)
     ti_fast_model: str | None = None  # TI_FAST_MODEL (optional local; else fall back to deep)
     anthropic_api_key: str | None = None  # ANTHROPIC_API_KEY (secret)
+    ti_ollama_url: str | None = None  # TI_OLLAMA_URL (optional local fast-tier endpoint)
 
     # --- storage ---
     ti_db_url: str = "sqlite:///ti.db"  # TI_DB_URL (v1+: postgres://...)
