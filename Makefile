@@ -1,7 +1,7 @@
 UV ?= uv
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test validate sync sync-check scorecard migrate up run-api run-viewer
+.PHONY: help setup lint format test validate sync sync-check scorecard analyze migrate up run-api run-viewer
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -34,6 +34,9 @@ sync-check: ## Verify theses files are DB-round-trippable (CI)
 
 scorecard: ## R4: print the calibration track-record scorecard
 	$(UV) run python -m turtle_insight.services.reporting
+
+analyze: ## Run an analysis cycle into the configured DB (populate API/viewer)
+	$(UV) run python -m turtle_insight.services.pipeline
 
 migrate: ## Apply DB migrations (alembic upgrade head; respects TI_DB_URL)
 	$(UV) run --extra pg alembic upgrade head
