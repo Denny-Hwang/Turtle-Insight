@@ -69,6 +69,16 @@ class Curator(Agent):
     def scorecard(self, scores: list[CalibrationScore], *, now: datetime) -> Scorecard:
         return summarize(scores, now=now)
 
+    def register_active(
+        self, repo: CalibrationRepository, theses: list[Thesis], *, now: datetime
+    ) -> int:
+        """Register (upsert) a dated prediction for each active thesis."""
+        count = 0
+        for thesis in theses:
+            repo.add_prediction(register_prediction(thesis, now=now))
+            count += 1
+        return count
+
     def run(self, ctx: AgentContext) -> AgentResult:
         if ctx.thesis_repo is None:
             raise ValueError("Curator requires a thesis_repo in the context")

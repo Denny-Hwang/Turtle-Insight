@@ -33,6 +33,24 @@ def test_calibration_round_trip(tmp_path: Path) -> None:
     assert repo.list_scores(thesis_id="T-9999-9999") == []
 
 
+def test_prediction_round_trip_is_upsert(tmp_path: Path) -> None:
+    from turtle_insight.domain.calibration import Prediction
+
+    repo = _repo(tmp_path)
+    pred = Prediction(
+        thesis_id="T-2026-0001",
+        statement="demand rises",
+        by_date=date(2030, 1, 1),
+        conviction=60,
+        created=_NOW,
+    )
+    repo.add_prediction(pred)
+    repo.add_prediction(pred.model_copy(update={"conviction": 75}))
+    rows = repo.list_predictions()
+    assert len(rows) == 1  # keyed by thesis_id
+    assert rows[0].conviction == 75
+
+
 def test_curator_score_and_record_persists(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
     thesis = Thesis(

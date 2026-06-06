@@ -100,6 +100,13 @@ def test_calibration_history_endpoint_empty_by_default(tmp_path: Path) -> None:
     assert _client(tmp_path).get("/calibration/history").json() == []
 
 
+def test_predictions_endpoint_after_trigger(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    client.post("/agents/cycle/run")  # full cycle registers predictions
+    ids = {p["thesis_id"] for p in client.get("/predictions").json()}
+    assert ids == {"T-2026-0001", "T-2026-0002", "T-2026-0100"}
+
+
 def _token_client(tmp_path: Path, token: str) -> TestClient:
     repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
     app = create_app(Settings(_env_file=None, ti_api_token=token))

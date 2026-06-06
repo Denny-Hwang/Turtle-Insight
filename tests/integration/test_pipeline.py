@@ -34,6 +34,17 @@ def test_analyze_mvp_cycle_populates_seed(tmp_path: Path) -> None:
     assert set(result.activated) == {"T-2026-0100"}
 
 
+def test_analyze_registers_predictions_for_active(tmp_path: Path) -> None:
+    repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
+    result = analyze(repo, full=True, now=_NOW)
+    registered = {p.thesis_id for p in repo.list_predictions()}
+    assert registered == {"T-2026-0001", "T-2026-0002", "T-2026-0100"}
+    assert result.predictions == 3
+    # idempotent: re-running keeps one prediction per thesis
+    analyze(repo, full=True, now=_NOW)
+    assert len(repo.list_predictions()) == 3
+
+
 def test_analyze_write_files_materializes_valid_canonical_yaml(tmp_path: Path) -> None:
     repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
     base = tmp_path / "theses"

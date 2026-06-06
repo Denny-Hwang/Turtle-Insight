@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..domain.calibration import CalibrationScore
+from ..domain.calibration import CalibrationScore, Prediction
 from ..domain.signal import Signal
 from ..domain.thesis import Status, Thesis
 
@@ -47,6 +47,12 @@ class CalibrationRepository(ABC):
 
     @abstractmethod
     def list_scores(self, *, thesis_id: str | None = None) -> list[CalibrationScore]: ...
+
+    @abstractmethod
+    def add_prediction(self, prediction: Prediction) -> None: ...
+
+    @abstractmethod
+    def list_predictions(self) -> list[Prediction]: ...
 
 
 class Repository(ThesisRepository, SignalRepository, CalibrationRepository, ABC):

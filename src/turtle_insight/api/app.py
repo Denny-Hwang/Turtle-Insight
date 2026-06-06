@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from ..agents.market import MarketRegime
 from ..config.settings import Settings, get_settings
-from ..domain.calibration import PeriodScorecard, Scorecard
+from ..domain.calibration import PeriodScorecard, Prediction, Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
 from ..services.advisory import (
@@ -122,6 +122,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/calibration/history")
     def calibration_hist(repo: RepoDep) -> list[PeriodScorecard]:
         return calibration_history(repo)
+
+    @app.get("/predictions")
+    def predictions(repo: RepoDep) -> list[Prediction]:
+        return repo.list_predictions()
 
     @app.get("/market/regime")
     def market_regime(repo: RepoDep) -> MarketRegime:

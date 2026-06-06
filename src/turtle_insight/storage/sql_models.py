@@ -94,3 +94,13 @@ class CalibrationRow(Base):
     correct: Mapped[bool] = mapped_column()
     brier: Mapped[float] = mapped_column()
     scored_at: Mapped[datetime] = mapped_column()
+
+
+class PredictionRow(Base):
+    __tablename__ = "predictions"
+
+    thesis_id: Mapped[str] = mapped_column(String, primary_key=True)
+    statement: Mapped[str] = mapped_column(String)
+    by_date: Mapped[date] = mapped_column()
+    conviction: Mapped[int] = mapped_column()
+    created: Mapped[datetime] = mapped_column()
