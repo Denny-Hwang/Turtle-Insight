@@ -22,10 +22,14 @@ from turtle_insight.domain.thesis import (
     Status,
     Thesis,
 )
+from turtle_insight.services.embedding import HashingEmbedder
+from turtle_insight.services.pipeline import analyze
+from turtle_insight.services.rag_index import EVIDENCE_TABLE, index_evidence, search
 from turtle_insight.storage.rag import VectorStore
 from turtle_insight.storage.sqlite_repo import SqliteRepository
 
 _PG_URL = os.environ.get("TI_TEST_PG_URL")
+_NOW = datetime(2026, 6, 5)
 pytestmark = pytest.mark.skipif(_PG_URL is None, reason="TI_TEST_PG_URL not set")
 
 
@@ -66,3 +70,18 @@ def test_pgvector_nearest_neighbour() -> None:
     neighbours = store.search([0.9, 0.1, 0.0], k=2)
     assert [n.id for n in neighbours] == ["a", "b"]
     assert neighbours[0].distance <= neighbours[1].distance
+
+
+def test_rag_evidence_index_and_search() -> None:
+    assert _PG_URL is not None
+    repo = SqliteRepository.from_url(_PG_URL)
+    analyze(repo, full=True, now=_NOW)  # populate theses + evidence
+
+    embedder = HashingEmbedder(dim=64)
+    store = VectorStore(create_engine(_PG_URL), dim=embedder.dim, table=EVIDENCE_TABLE)
+    indexed = index_evidence(repo, store, embedder)
+    assert indexed >= 1
+
+    results = search(store, embedder, "HBM memory demand", k=3)
+    assert results
+    assert results[0].ref.startswith("T-2026-")
