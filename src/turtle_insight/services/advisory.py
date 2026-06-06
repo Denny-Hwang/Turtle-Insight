@@ -12,7 +12,7 @@ from datetime import datetime
 from ..agents.allocator import Allocator
 from ..agents.market import Market, MarketRegime
 from ..agents.synthesizer import Synthesizer
-from ..domain.calibration import Scorecard, summarize
+from ..domain.calibration import Period, PeriodScorecard, Scorecard, history, summarize
 from ..domain.proposal import Brief, Constraints, Proposal
 from ..domain.thesis import Horizon, Status, Thesis
 from ..storage.repository import CalibrationRepository, Repository
@@ -59,6 +59,12 @@ def weekly_brief(
 
 def calibration_scorecard(repo: CalibrationRepository, *, now: datetime | None = None) -> Scorecard:
     return summarize(repo.list_scores(), now=now or datetime.now())
+
+
+def calibration_history(
+    repo: CalibrationRepository, *, by: Period = "month"
+) -> list[PeriodScorecard]:
+    return history(repo.list_scores(), by=by)
 
 
 def daily_brief(repo: Repository, *, now: datetime | None = None) -> Brief:

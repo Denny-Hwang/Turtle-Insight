@@ -96,6 +96,10 @@ def test_calibration_endpoint_empty_by_default(tmp_path: Path) -> None:
     assert card["accuracy"] == 0.0
 
 
+def test_calibration_history_endpoint_empty_by_default(tmp_path: Path) -> None:
+    assert _client(tmp_path).get("/calibration/history").json() == []
+
+
 def _token_client(tmp_path: Path, token: str) -> TestClient:
     repo = SqliteRepository.from_url(f"sqlite:///{tmp_path / 'ti.db'}")
     app = create_app(Settings(_env_file=None, ti_api_token=token))

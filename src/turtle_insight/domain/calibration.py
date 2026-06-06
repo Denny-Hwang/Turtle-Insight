@@ -8,10 +8,13 @@ The Curator agent (P5) drives this; here we provide the pure data + scoring.
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from .thesis import ThesisId
+
+Period = Literal["month", "year"]
 
 
 class Prediction(BaseModel):
@@ -97,3 +100,41 @@ def summarize(scores: list[CalibrationScore], *, now: datetime) -> Scorecard:
         mean_brier=mean_brier,
         generated_at=now,
     )
+
+
+class PeriodScorecard(BaseModel):
+    """Calibration aggregate for one time bucket (track-record trend point)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    period: str  # "2026-06" (month) or "2026" (year)
+    total: int
+    correct: int
+    accuracy: float
+    mean_brier: float
+
+
+def _period_key(moment: datetime, by: Period) -> str:
+    return moment.strftime("%Y-%m") if by == "month" else moment.strftime("%Y")
+
+
+def history(scores: list[CalibrationScore], *, by: Period = "month") -> list[PeriodScorecard]:
+    """Group scores into per-period scorecards (ascending by period)."""
+    buckets: dict[str, list[CalibrationScore]] = {}
+    for score_item in scores:
+        buckets.setdefault(_period_key(score_item.scored_at, by), []).append(score_item)
+    result: list[PeriodScorecard] = []
+    for period in sorted(buckets):
+        bucket = buckets[period]
+        total = len(bucket)
+        correct = sum(1 for s in bucket if s.correct)
+        result.append(
+            PeriodScorecard(
+                period=period,
+                total=total,
+                correct=correct,
+                accuracy=correct / total if total else 0.0,
+                mean_brier=sum(s.brier for s in bucket) / total if total else 0.0,
+            )
+        )
+    return result

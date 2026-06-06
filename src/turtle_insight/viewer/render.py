@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from ..agents.market import MarketRegime
-from ..domain.calibration import Scorecard
+from ..domain.calibration import PeriodScorecard, Scorecard
 from ..domain.proposal import Proposal
 from ..domain.thesis import Thesis
 
@@ -73,6 +73,11 @@ def scorecard_metrics(scorecard: Scorecard) -> list[tuple[str, str]]:
         ("Accuracy", f"{scorecard.accuracy:.0%}"),
         ("Mean Brier", f"{scorecard.mean_brier:.3f}"),
     ]
+
+
+def accuracy_by_period(periods: Iterable[PeriodScorecard]) -> dict[str, float]:
+    """Map period -> accuracy for a calibration trend line chart."""
+    return {p.period: p.accuracy for p in periods}
 
 
 def proposal_rows(proposal: Proposal) -> list[dict[str, str]]:
