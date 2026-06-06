@@ -24,6 +24,7 @@ from ..connectors.market_api import MarketApiConnector
 from ..connectors.news import NewsConnector
 from ..services.orchestrator import CycleResult, Orchestrator
 from ..storage.files import THESES_DIR, save_thesis
+from ..storage.repository import Repository
 from ..storage.sqlite_repo import SqliteRepository
 
 
@@ -37,7 +38,7 @@ def default_connectors() -> list[Connector]:
     ]
 
 
-def export_theses(repo: SqliteRepository, base_dir: Path = THESES_DIR) -> int:
+def export_theses(repo: Repository, base_dir: Path = THESES_DIR) -> int:
     """Write every thesis in the DB to the canonical ``theses/<status>/`` store."""
     count = 0
     for thesis in repo.list_theses():
@@ -47,7 +48,7 @@ def export_theses(repo: SqliteRepository, base_dir: Path = THESES_DIR) -> int:
 
 
 def analyze(
-    repo: SqliteRepository,
+    repo: Repository,
     *,
     full: bool = True,
     now: datetime | None = None,
