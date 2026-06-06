@@ -15,7 +15,7 @@
 
 ## 이후 (v1.x+)
 
-- Macro/Strategist/Market 에이전트 확장(상위·기본·기술 계층 자동화)
+- ✅ Macro/Strategist/Market 에이전트 확장(상위·기본·기술 계층 자동화) — **P6 완료**: `run_full_cycle`로 macro→trend→chain 3계층 그래프 자동 생성
 - PostgreSQL + pgvector 전환(근거 RAG), Dramatiq+Redis 비동기, launchd 스케줄 정식화
 - 로컬 모델 티어링(Ollama/MLX) 실측 적용
 - 캘리브레이션 히스토리 대시보드, 데일리/먼슬리 브리핑

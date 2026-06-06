@@ -39,3 +39,9 @@
 - **맥락**: P2 동기화의 exit criteria는 "예시 테제가 파일↔DB 왕복". 정본은 파일(ADR-0004)이지만, 왕복 검증과 조회를 위해 DB가 테제를 충실히 복원할 수 있어야 한다. TDD §4의 `theses` 컬럼 목록은 `falsifiers`/`risks`/`parents`/`children`을 포함하지 않고, 그래프는 `thesis_edges` 테이블로 분리한다.
 - **결정**: MVP에서는 `theses` 행에 `parents`/`children`/`falsifiers`/`risks`를 JSON 컬럼으로, `assets`/`evidence`를 자식 테이블로 저장해 **무손실 인덱스**로 만든다. 정규화된 `thesis_edges` 테이블은 그래프 질의가 필요해지는 시점(P5/v1.x)으로 보류한다. 파일↔DB는 단방향(`make sync`), CI(`make sync-check`)가 왕복 일관성을 검사한다.
 - **결과**: 왕복 충실도 확보·구현 단순. 그래프 탐색은 JSON의 parents/children id로 충분(P5 `/theses/{id}/graph`). edges 정규화는 RAG/대규모 그래프 질의 도입 시 재검토.
+
+## ADR-0007 — 3계층 자동화(Macro/Strategist/Market) + Market 산출 형태
+- **상태**: accepted
+- **맥락**: v1.x에서 상위(Macro)·기본(Strategist)·기술(Market) 계층을 자동화해 macro→trend→chain 그래프를 완성해야 한다. Macro/Strategist는 테제를, Market은 "기술/시장 신호"를 산출(AGENTS.md). MVP의 결정성(CI 재현성)을 유지해야 한다.
+- **결정**: Macro/Strategist/Analyst는 공용 `agents/templates.py`(ThesisTemplate+build_candidate+synthesize)로 **결정적 룰베이스** 합성(시그널 매칭→evidence 링크, falsifiers 명시). 계층 간 parent/child 링크로 그래프 연결(0001→0002→0100). Market은 테제가 아니라 **파생 시장국면 신호**(regime·KR/US 상대강도, 링크+요약)를 `signals`에 적재. `Orchestrator.run_full_cycle`이 Scout→Macro→Strategist→Analyst→Market→RedTeam→승격을 구동(`run_cycle`은 MVP 호환 유지). LLM 합성은 이후.
+- **결과**: 3계층이 게이트를 통과해 active가 되는 연결 그래프 자동 생성. 기존 P0–P5 테스트 불변(run_cycle 유지). Market 신호는 추후 Allocator 국면 반영에 활용 가능.

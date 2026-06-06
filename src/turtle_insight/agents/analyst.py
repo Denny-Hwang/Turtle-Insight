@@ -1,36 +1,18 @@
-"""Analyst agent: turn signals into candidate Asset/Chain theses.
+"""Analyst agent: turn signals into a candidate Chain/Asset thesis.
 
-MVP synthesis is deterministic and rule-based: each configured
-:class:`ThesisTemplate` is grown into a candidate thesis whose evidence links
-to the matching ingested signals (``signal_id`` set, dated, with url) and whose
-falsifiers are explicit. LLM-assisted synthesis via ``services.inference`` is a
-v1.x enhancement; keeping this pure makes the promotion gate reproducible.
+Deterministic, rule-based synthesis (see :mod:`agents.templates`): evidence
+links to the supporting signals and falsifiers are explicit, so the promotion
+gate is reproducible. The seed chain thesis links up to the Strategist's trend
+thesis (its parent) to complete the macro -> trend -> chain graph.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from dataclasses import dataclass, field
-from datetime import datetime
 from typing import ClassVar
 
-from ..domain.signal import Signal
-from ..domain.thesis import AssetLink, AssetRole, Evidence, Horizon, Layer, Status, Thesis
+from ..domain.thesis import Horizon, Layer
 from .base import Agent, AgentContext, AgentResult
-
-
-@dataclass(frozen=True)
-class ThesisTemplate:
-    id: str
-    layer: Layer
-    horizon: Horizon
-    title: str
-    claim: str
-    falsifiers: list[str]
-    evidence_tags: list[str]
-    risks: list[str] = field(default_factory=list)
-    parents: list[str] = field(default_factory=list)
-
+from .templates import ThesisTemplate, synthesize
 
 # Seed: agentic-inference demand -> accelerated-compute full-stack bottleneck (memory/power).
 DEFAULT_SEEDS: tuple[ThesisTemplate, ...] = (
@@ -50,28 +32,9 @@ DEFAULT_SEEDS: tuple[ThesisTemplate, ...] = (
         ],
         evidence_tags=["memory", "power", "compute"],
         risks=["사이클·재고 변동성", "정책·전력 인프라 제약"],
+        parents=["T-2026-0002"],
     ),
 )
-
-
-def _market_for(ticker: str) -> str:
-    return "KR" if ticker.isdigit() else "US"
-
-
-def _assets_from_signals(signals: Iterable[Signal]) -> list[AssetLink]:
-    ordered: list[str] = []
-    for signal in signals:
-        for ticker in signal.tickers:
-            if ticker not in ordered:
-                ordered.append(ticker)
-    return [
-        AssetLink(
-            market=_market_for(ticker),
-            ticker=ticker,
-            role=AssetRole.primary if index == 0 else AssetRole.secondary,
-        )
-        for index, ticker in enumerate(ordered)
-    ]
 
 
 class Analyst(Agent):
@@ -80,46 +43,5 @@ class Analyst(Agent):
     def __init__(self, seeds: tuple[ThesisTemplate, ...] = DEFAULT_SEEDS) -> None:
         self._seeds = seeds
 
-    def _build(self, template: ThesisTemplate, signals: list[Signal], now: datetime) -> Thesis:
-        matched = [s for s in signals if set(s.tags) & set(template.evidence_tags)]
-        evidence = [
-            Evidence(
-                date=s.published_at.date(),
-                source=s.source,
-                url=s.url,
-                summary=s.summary,
-                weight=0.5,
-                signal_id=s.id,
-            )
-            for s in matched
-        ]
-        return Thesis(
-            id=template.id,
-            layer=template.layer,
-            horizon=template.horizon,
-            title=template.title,
-            claim=template.claim,
-            status=Status.candidate,
-            parents=list(template.parents),
-            assets=_assets_from_signals(matched),
-            evidence=evidence,
-            falsifiers=list(template.falsifiers),
-            risks=list(template.risks),
-            created=now,
-        )
-
     def run(self, ctx: AgentContext) -> AgentResult:
-        if ctx.signal_repo is None or ctx.thesis_repo is None:
-            raise ValueError("Analyst requires signal_repo and thesis_repo in the context")
-        now = ctx.now or datetime.now()
-        signals = ctx.signal_repo.list_signals()
-        count = 0
-        for template in self._seeds:
-            thesis = self._build(template, signals, now)
-            if not thesis.evidence:
-                continue  # no supporting signals yet — do not fabricate evidence
-            ctx.thesis_repo.upsert_thesis(thesis)
-            count += 1
-        return AgentResult(
-            agent=self.name, summary=f"created {count} candidate thesis(es)", theses=count
-        )
+        return synthesize(ctx, self._seeds, agent_name=self.name, noun="candidate thesis(es)")
