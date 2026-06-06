@@ -12,6 +12,7 @@ import streamlit as st
 
 from turtle_insight.config.settings import get_settings
 from turtle_insight.services.advisory import (
+    calibration_history,
     calibration_scorecard,
     current_regime,
     daily_brief,
@@ -21,6 +22,7 @@ from turtle_insight.services.advisory import (
 )
 from turtle_insight.storage.sqlite_repo import SqliteRepository
 from turtle_insight.viewer.render import (
+    accuracy_by_period,
     build_graph_dot,
     proposal_rows,
     regime_badge,
@@ -70,6 +72,9 @@ def main() -> None:
     metrics = scorecard_metrics(calibration_scorecard(repo))
     for column, (label, value) in zip(columns, metrics, strict=False):
         column.metric(label, value)
+    trend = accuracy_by_period(calibration_history(repo))
+    if trend:
+        st.line_chart(trend)
 
     st.header("Latest proposal (suggestions — not buy/sell)")
     rows = proposal_rows(latest_proposal(repo))

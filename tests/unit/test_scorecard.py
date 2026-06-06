@@ -7,20 +7,34 @@ from datetime import datetime
 import pytest
 
 from turtle_insight.agents.curator import Curator
-from turtle_insight.domain.calibration import CalibrationScore, summarize
+from turtle_insight.domain.calibration import CalibrationScore, history, summarize
 
 _NOW = datetime(2026, 6, 5)
 
 
-def _score(*, correct: bool, brier: float) -> CalibrationScore:
+def _score(*, correct: bool, brier: float, scored_at: datetime = _NOW) -> CalibrationScore:
     return CalibrationScore(
         thesis_id="T-2026-0001",
         conviction=80,
         realized=correct,
         correct=correct,
         brier=brier,
-        scored_at=_NOW,
+        scored_at=scored_at,
     )
+
+
+def test_history_groups_by_month_ascending() -> None:
+    periods = history(
+        [
+            _score(correct=True, brier=0.04, scored_at=datetime(2026, 5, 10)),
+            _score(correct=False, brier=0.64, scored_at=datetime(2026, 6, 1)),
+            _score(correct=True, brier=0.04, scored_at=datetime(2026, 6, 20)),
+        ]
+    )
+    assert [p.period for p in periods] == ["2026-05", "2026-06"]
+    assert periods[1].total == 2
+    assert periods[1].correct == 1
+    assert periods[1].accuracy == 0.5
 
 
 def test_summarize_empty_is_zeroed() -> None:

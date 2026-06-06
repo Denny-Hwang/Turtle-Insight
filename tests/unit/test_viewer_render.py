@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from turtle_insight.agents.market import MarketRegime
-from turtle_insight.domain.calibration import Scorecard
+from turtle_insight.domain.calibration import PeriodScorecard, Scorecard
 from turtle_insight.domain.proposal import Constraints, Proposal, ProposalItem, Scenarios
 from turtle_insight.domain.thesis import AssetLink, AssetRole, Horizon, Layer, Status, Thesis
 from turtle_insight.viewer.render import (
     LAYER_COLORS,
+    accuracy_by_period,
     build_graph_dot,
     proposal_rows,
     regime_badge,
@@ -69,6 +70,14 @@ def test_scorecard_metrics_formats_values() -> None:
     assert ("Predictions", "4") in metrics
     assert ("Accuracy", "75%") in metrics
     assert ("Mean Brier", "0.123") in metrics
+
+
+def test_accuracy_by_period_maps_period_to_accuracy() -> None:
+    periods = [
+        PeriodScorecard(period="2026-05", total=1, correct=1, accuracy=1.0, mean_brier=0.04),
+        PeriodScorecard(period="2026-06", total=2, correct=1, accuracy=0.5, mean_brier=0.34),
+    ]
+    assert accuracy_by_period(periods) == {"2026-05": 1.0, "2026-06": 0.5}
 
 
 def test_proposal_rows_shape() -> None:
