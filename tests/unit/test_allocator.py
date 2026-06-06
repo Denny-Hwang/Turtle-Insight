@@ -73,3 +73,18 @@ def test_horizon_mismatch_is_filtered_out() -> None:
 def test_excluded_sector_is_filtered_out() -> None:
     proposal = Allocator(_constraints(excluded_sectors=["memory"])).propose([_active()], now=_NOW)
     assert proposal.items == []
+
+
+def test_regime_shapes_stance_and_sizing() -> None:
+    from turtle_insight.agents.market import MarketRegime
+
+    risk_off = MarketRegime(regime="risk_off", leader="US", kr_signals=0, us_signals=2)
+    proposal = Allocator(_constraints()).propose([_active()], now=_NOW, regime=risk_off)
+    # Risk-off keeps every item defensive (watch), even the primary asset.
+    assert {item.stance for item in proposal.items} == {"watch"}
+    # Sizing rationale surfaces the regime + relative strength, still non-imperative.
+    for item in proposal.items:
+        assert "regime=risk_off" in item.sizing_rationale
+        assert "instruction" in item.sizing_rationale.lower()
+    us_item = next(i for i in proposal.items if i.asset.market == "US")
+    assert "relative strength: tailwind" in us_item.sizing_rationale

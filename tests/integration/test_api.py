@@ -83,6 +83,12 @@ def test_daily_and_monthly_brief_endpoints(tmp_path: Path) -> None:
     assert "Calibration scorecard" in monthly["body_md"]
 
 
+def test_market_regime_endpoint(tmp_path: Path) -> None:
+    body = _client(tmp_path).get("/market/regime").json()
+    assert body["regime"] in {"risk_on", "risk_off", "neutral"}
+    assert body["leader"] in {"KR", "US", "balanced"}
+
+
 def test_calibration_endpoint_empty_by_default(tmp_path: Path) -> None:
     card = _client(tmp_path).get("/calibration").json()
     assert card["total"] == 0

@@ -1,7 +1,8 @@
-"""Advisory generation shared by the API and viewer: latest proposal + weekly brief.
+"""Advisory generation shared by the API and viewer: proposals + briefs.
 
-Pulls active theses from the repository and runs the Allocator/Synthesizer with
-a default (overridable) constraints snapshot.
+Pulls active theses (and the current market regime) from the repository and
+runs the Allocator/Synthesizer with a default (overridable) constraints
+snapshot. The market regime (Market agent) shapes proposal stance/sizing.
 """
 
 from __future__ import annotations
@@ -9,37 +10,50 @@ from __future__ import annotations
 from datetime import datetime
 
 from ..agents.allocator import Allocator
+from ..agents.market import Market, MarketRegime
 from ..agents.synthesizer import Synthesizer
 from ..domain.calibration import Scorecard, summarize
 from ..domain.proposal import Brief, Constraints, Proposal
-from ..domain.thesis import Horizon, Status
-from ..storage.repository import CalibrationRepository, Repository, ThesisRepository
+from ..domain.thesis import Horizon, Status, Thesis
+from ..storage.repository import CalibrationRepository, Repository
 
 
 def default_constraints() -> Constraints:
     return Constraints(risk_tolerance="moderate", horizon=Horizon.long, excluded_sectors=[])
 
 
+def current_regime(repo: Repository) -> MarketRegime:
+    """Re-assess the market regime from the stored signals (deterministic)."""
+    return Market().assess(repo.list_signals())
+
+
+def _proposal_for(
+    repo: Repository, active: list[Thesis], constraints: Constraints | None, when: datetime
+) -> Proposal:
+    regime = current_regime(repo)
+    return Allocator(constraints or default_constraints()).propose(active, now=when, regime=regime)
+
+
 def latest_proposal(
-    repo: ThesisRepository,
+    repo: Repository,
     constraints: Constraints | None = None,
     *,
     now: datetime | None = None,
 ) -> Proposal:
     when = now or datetime.now()
     active = repo.list_theses(status=Status.active)
-    return Allocator(constraints or default_constraints()).propose(active, now=when)
+    return _proposal_for(repo, active, constraints, when)
 
 
 def weekly_brief(
-    repo: ThesisRepository,
+    repo: Repository,
     constraints: Constraints | None = None,
     *,
     now: datetime | None = None,
 ) -> Brief:
     when = now or datetime.now()
     active = repo.list_theses(status=Status.active)
-    proposal = Allocator(constraints or default_constraints()).propose(active, now=when)
+    proposal = _proposal_for(repo, active, constraints, when)
     return Synthesizer().weekly(active, proposal, now=when)
 
 
@@ -63,6 +77,6 @@ def monthly_brief(
 ) -> Brief:
     when = now or datetime.now()
     active = repo.list_theses(status=Status.active)
-    proposal = Allocator(constraints or default_constraints()).propose(active, now=when)
+    proposal = _proposal_for(repo, active, constraints, when)
     scorecard = summarize(repo.list_scores(), now=when)
     return Synthesizer().monthly(active, proposal, scorecard, now=when)

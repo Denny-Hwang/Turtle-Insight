@@ -12,12 +12,14 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
+from ..agents.market import MarketRegime
 from ..config.settings import get_settings
 from ..domain.calibration import Scorecard
 from ..domain.proposal import Brief, Proposal
 from ..domain.thesis import Layer, Status, Thesis
 from ..services.advisory import (
     calibration_scorecard,
+    current_regime,
     daily_brief,
     latest_proposal,
     monthly_brief,
@@ -99,6 +101,10 @@ def create_app() -> FastAPI:
     @app.get("/calibration")
     def calibration(repo: RepoDep) -> Scorecard:
         return calibration_scorecard(repo)
+
+    @app.get("/market/regime")
+    def market_regime(repo: RepoDep) -> MarketRegime:
+        return current_regime(repo)
 
     return app
 

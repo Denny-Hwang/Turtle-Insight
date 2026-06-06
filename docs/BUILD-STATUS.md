@@ -17,6 +17,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P6 Macro/Strategist/Market | [x] | [x] | 공용 templates + Macro(0001)/Strategist(0002)/Market(regime), run_full_cycle로 macro→trend→chain 3계층 active, eval 그린 |
 | P7 캘리브레이션 영속화+스코어카드 | [x] | [x] | calibration 테이블/repo + Curator scorecard + advisory/`/calibration` + `make scorecard`(R4), 단위/통합 그린 |
 | P8 브리핑 확장(daily/monthly) | [x] | [x] | Synthesizer daily/monthly(스코어카드 포함) + advisory + `/briefs/{daily,monthly}` + 뷰어 선택, 단위/통합 그린 |
+| P9 Market 국면→Allocator 반영 | [x] | [x] | Allocator regime-aware(stance/사이징 보정, 비명령형 유지) + advisory current_regime + `/market/regime`, 단위/통합 그린 |
 
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
 - 레포 종합: `src/turtle_insight/` 41개 모듈 존재하나 `domain/`·`storage/`·`agents/`·`connectors/`·`services/`는 전부 docstring 스텁("Implemented in P*"). 실로직은 `config/settings.py`(+`services/validation.py` R1 스텁)뿐.
