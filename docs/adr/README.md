@@ -51,3 +51,9 @@
 - **맥락**: ADR-0005대로 v1+는 Postgres + pgvector(근거 RAG). 단일 코드베이스가 SQLite(dev)와 Postgres(v1+)를 모두 지원하고, 스키마 진화는 Alembic으로 추적해야 한다. CI에서 결정적으로 검증 가능해야 한다.
 - **결정**: (1) 리포지토리는 SQLAlchemy 엔진 기반이라 `from_url`로 SQLite/Postgres 공용 — 관계형 코어 테이블은 두 DB에서 동일. (2) 마이그레이션은 Alembic(`alembic upgrade head`, `make migrate`); 초기 리비전은 모델 메타데이터로 테이블 생성(이후 컬럼 단위 autogenerate). (3) **pgvector는 Postgres 전용**: `storage/rag.py`의 `VectorStore`가 `vector` 확장+`embeddings` 테이블을 별도 관리(공용 Base 밖). 벡터는 텍스트로 전달 후 `::vector` 캐스트 → 추가 파이썬 드라이버 의존 없음(psycopg만). 임베딩은 외부 모델이 공급. (4) CI `pg-compat` 잡이 pgvector 이미지 서비스로 마이그레이션+왕복+근접검색을 검증; 로컬 SQLite 테스트는 `TI_TEST_PG_URL` 없으면 skip. docker-compose로 postgres+redis 제공.
 - **결과**: SQLite 경로 무변경(회귀 없음)으로 Postgres+pgvector를 추가. RAG 검색 substrate 확보. 임베딩 모델 연동·시계열 시세는 후속.
+
+## ADR-0009 — 추론 클라이언트 어댑터(주입형 Ollama/Anthropic)
+- **상태**: accepted
+- **맥락**: ADR-0003의 deep/fast 티어링을 실제 백엔드와 연결해야 한다. 단, `services/inference.py` 게이트는 SDK를 직접 import하지 않아야 하고(테스트 용이·의존 분리), 라이브 호출은 CI에서 검증 불가다.
+- **결정**: 구체 클라이언트를 `services/llm_clients.py`에 둔다 — `OllamaClient`(로컬 fast, httpx `/api/chat`), `AnthropicClient`(deep, **주입형** SDK 클라이언트; `from_settings`에서만 `anthropic` 지연 import). 둘 다 `LLMClient` 프로토콜 충족. `build_client`/`build_inference`가 settings로 선택(로컬 Ollama 우선, 없으면 Anthropic). 의존성은 `llm` extra(anthropic, httpx). `anthropic`은 mypy ignore_missing_imports + 지연 import라 미설치여도 무방. 테스트는 httpx MockTransport(Ollama)·가짜 SDK(Anthropic)로 **라이브 호출 없이** 요청/응답 매핑 검증.
+- **결과**: 게이트는 IO-free 유지, 실제 백엔드는 주입으로 교체. 로컬 모델 실측은 외부 런타임에서, 코드·계약은 CI로 검증. 모델명은 settings에서만.
