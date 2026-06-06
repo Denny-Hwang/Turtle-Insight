@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.orm import Session, selectinload
 
-from ..domain.calibration import CalibrationScore
+from ..domain.calibration import CalibrationScore, Prediction
 from ..domain.signal import Signal
 from ..domain.thesis import (
     AssetLink,
@@ -18,7 +18,15 @@ from ..domain.thesis import (
     Thesis,
 )
 from .repository import Repository
-from .sql_models import AssetRow, Base, CalibrationRow, EvidenceRow, SignalRow, ThesisRow
+from .sql_models import (
+    AssetRow,
+    Base,
+    CalibrationRow,
+    EvidenceRow,
+    PredictionRow,
+    SignalRow,
+    ThesisRow,
+)
 
 
 def _to_thesis_row(thesis: Thesis) -> ThesisRow:
@@ -135,6 +143,26 @@ def _to_calibration_score(row: CalibrationRow) -> CalibrationScore:
     )
 
 
+def _to_prediction_row(prediction: Prediction) -> PredictionRow:
+    return PredictionRow(
+        thesis_id=prediction.thesis_id,
+        statement=prediction.statement,
+        by_date=prediction.by_date,
+        conviction=prediction.conviction,
+        created=prediction.created,
+    )
+
+
+def _to_prediction(row: PredictionRow) -> Prediction:
+    return Prediction(
+        thesis_id=row.thesis_id,
+        statement=row.statement,
+        by_date=row.by_date,
+        conviction=row.conviction,
+        created=row.created,
+    )
+
+
 class SqliteRepository(Repository):
     """Thesis + signal + calibration repository backed by a SQLAlchemy engine."""
 
@@ -218,3 +246,17 @@ class SqliteRepository(Repository):
             stmt = stmt.where(CalibrationRow.thesis_id == thesis_id)
         with Session(self._engine) as session:
             return [_to_calibration_score(row) for row in session.scalars(stmt).all()]
+
+    def add_prediction(self, prediction: Prediction) -> None:
+        with Session(self._engine) as session:
+            existing = session.get(PredictionRow, prediction.thesis_id)
+            if existing is not None:
+                session.delete(existing)
+                session.flush()
+            session.add(_to_prediction_row(prediction))
+            session.commit()
+
+    def list_predictions(self) -> list[Prediction]:
+        stmt = select(PredictionRow).order_by(PredictionRow.thesis_id)
+        with Session(self._engine) as session:
+            return [_to_prediction(row) for row in session.scalars(stmt).all()]

@@ -58,6 +58,7 @@ def analyze(
     orchestrator = Orchestrator(
         signal_repo=repo,
         thesis_repo=repo,
+        calibration_repo=repo,
         connectors=default_connectors(),
         now=now or datetime.now(),
     )

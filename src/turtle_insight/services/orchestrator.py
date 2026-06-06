@@ -14,6 +14,7 @@ from datetime import datetime
 
 from ..agents.analyst import Analyst
 from ..agents.base import AgentContext
+from ..agents.curator import Curator
 from ..agents.macro import Macro
 from ..agents.market import Market
 from ..agents.redteam import RedTeam
@@ -22,7 +23,7 @@ from ..agents.strategist import Strategist
 from ..connectors.base import Connector
 from ..domain.state import can_promote_to_active, promote
 from ..domain.thesis import Status
-from ..storage.repository import SignalRepository, ThesisRepository
+from ..storage.repository import CalibrationRepository, SignalRepository, ThesisRepository
 
 
 @dataclass
@@ -31,6 +32,7 @@ class CycleResult:
     candidates: int = 0
     reviews: int = 0
     activated: list[str] = field(default_factory=list)
+    predictions: int = 0
 
 
 class Orchestrator:
@@ -46,6 +48,7 @@ class Orchestrator:
         macro: Macro | None = None,
         strategist: Strategist | None = None,
         market: Market | None = None,
+        calibration_repo: CalibrationRepository | None = None,
         now: datetime | None = None,
     ) -> None:
         self._signal_repo = signal_repo
@@ -57,6 +60,8 @@ class Orchestrator:
         self._macro = macro or Macro()
         self._strategist = strategist or Strategist()
         self._market = market or Market()
+        self._curator = Curator()
+        self._calibration_repo = calibration_repo
         self._now = now
 
     def _context(self) -> AgentContext:
@@ -74,6 +79,11 @@ class Orchestrator:
             if can_promote_to_active(thesis, review):
                 self._thesis_repo.upsert_thesis(promote(thesis, Status.active, review))
                 result.activated.append(thesis.id)
+        if self._calibration_repo is not None:
+            active = self._thesis_repo.list_theses(status=Status.active)
+            result.predictions = self._curator.register_active(
+                self._calibration_repo, active, now=self._now or datetime.now()
+            )
 
     def run_cycle(self) -> CycleResult:
         ctx = self._context()
