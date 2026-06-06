@@ -51,7 +51,8 @@ def main() -> None:
     visible = [t for t in theses if t.status.value in chosen]
 
     st.subheader("Thesis graph")
-    st.graphviz_chart(build_graph_dot(visible))
+    show_assets = st.sidebar.checkbox("Show asset nodes", value=True)
+    st.graphviz_chart(build_graph_dot(visible, include_assets=show_assets))
 
     ids = [t.id for t in visible]
     if ids:
