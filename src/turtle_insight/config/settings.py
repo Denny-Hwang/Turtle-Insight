@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     fred_api_key: str | None = None  # FRED_API_KEY
     market_api_key: str | None = None  # MARKET_API_KEY
 
+    # --- connectors (ADR-0010: live gov/public APIs vs fixture replay) ---
+    ti_connector_mode: str = "fixture"  # TI_CONNECTOR_MODE ("fixture" | "live")
+    ti_edgar_user_agent: str | None = None  # TI_EDGAR_USER_AGENT (SEC fair-access identity)
+    ti_edgar_tickers: str = ""  # TI_EDGAR_TICKERS (comma-separated US tickers to watch)
+    ti_fred_series: str = ""  # TI_FRED_SERIES (comma-separated FRED series ids)
+    ti_cache_dir: str = ".cache"  # TI_CACHE_DIR (live-connector offline-resilience cache)
+    ti_http_timeout: float = 10.0  # TI_HTTP_TIMEOUT (seconds, live connector calls)
+
 
 @lru_cache
 def get_settings() -> Settings:
