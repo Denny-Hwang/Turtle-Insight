@@ -1725,6 +1725,7 @@ name = "turtle-insight"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1765,6 +1766,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'llm'", specifier = ">=0.40" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.111" },
     { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.111" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
     { name = "httpx", marker = "extra == 'llm'", specifier = ">=0.27" },
     { name = "jsonschema", specifier = ">=4.22" },

@@ -2,7 +2,10 @@
 
 Populates ``TI_DB_URL`` (default ``sqlite:///ti.db``) so the API and viewer have
 data: by default the full macro -> trend -> chain cycle, persisting the active
-seed graph and ingested signals. Uses the MVP fixture connectors (no live IO).
+seed graph and ingested signals. Connectors follow ``TI_CONNECTOR_MODE``
+(ADR-0010): ``fixture`` (default) replays recorded fixtures with no live IO;
+``live`` fetches from public government APIs (SEC EDGAR + FRED) with an
+offline-resilience cache fallback.
 
 With ``--write-files`` it also exports every thesis to the canonical
 ``theses/<status>/<id>.yaml`` store (content-as-code, ADR-0004), so ``make
@@ -15,11 +18,11 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-from ..config.settings import get_settings
+from ..config.settings import Settings, get_settings
 from ..connectors.base import Connector
 from ..connectors.dart import DartConnector
-from ..connectors.edgar import EdgarConnector
-from ..connectors.fred import FredConnector
+from ..connectors.edgar import EdgarConnector, EdgarLiveConnector
+from ..connectors.fred import FredConnector, FredLiveConnector
 from ..connectors.market_api import MarketApiConnector
 from ..connectors.news import NewsConnector
 from ..services.orchestrator import CycleResult, Orchestrator
@@ -28,7 +31,11 @@ from ..storage.repository import Repository
 from ..storage.sqlite_repo import SqliteRepository
 
 
-def default_connectors() -> list[Connector]:
+def _split_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def fixture_connectors() -> list[Connector]:
     return [
         EdgarConnector(),
         DartConnector(),
@@ -36,6 +43,37 @@ def default_connectors() -> list[Connector]:
         MarketApiConnector(),
         NewsConnector(),
     ]
+
+
+def live_connectors(settings: Settings) -> list[Connector]:
+    """Live mode: government/public sources only (EDGAR + FRED for now).
+
+    The remaining fixture sources are deliberately omitted rather than mixing
+    canned data into a live cycle.
+    """
+    cache_dir = Path(settings.ti_cache_dir) / "connectors"
+    return [
+        EdgarLiveConnector(
+            user_agent=settings.ti_edgar_user_agent,
+            tickers=_split_csv(settings.ti_edgar_tickers),
+            cache_dir=cache_dir,
+            timeout=settings.ti_http_timeout,
+        ),
+        FredLiveConnector(
+            api_key=settings.fred_api_key,
+            series=_split_csv(settings.ti_fred_series),
+            cache_dir=cache_dir,
+            timeout=settings.ti_http_timeout,
+        ),
+    ]
+
+
+def build_connectors(settings: Settings | None = None) -> list[Connector]:
+    """Pick connectors per ``TI_CONNECTOR_MODE`` (``fixture`` default, ``live``)."""
+    config = settings or get_settings()
+    if config.ti_connector_mode.strip().lower() == "live":
+        return live_connectors(config)
+    return fixture_connectors()
 
 
 def export_theses(repo: Repository, base_dir: Path = THESES_DIR) -> int:
@@ -59,7 +97,7 @@ def analyze(
         signal_repo=repo,
         thesis_repo=repo,
         calibration_repo=repo,
-        connectors=default_connectors(),
+        connectors=build_connectors(),
         now=now or datetime.now(),
     )
     result = orchestrator.run_full_cycle() if full else orchestrator.run_cycle()
@@ -87,8 +125,9 @@ def main(argv: list[str] | None = None) -> int:
     result = analyze(repo, full=not args.mvp, write_files=args.write_files)
     suffix = " (+files)" if args.write_files else ""
     print(
-        f"analyze: signals={result.signals} candidates={result.candidates} "
-        f"reviews={result.reviews} activated={result.activated} -> {settings.ti_db_url}{suffix}"
+        f"analyze[{settings.ti_connector_mode}]: signals={result.signals} "
+        f"candidates={result.candidates} reviews={result.reviews} "
+        f"activated={result.activated} -> {settings.ti_db_url}{suffix}"
     )
     return 0
 

@@ -30,6 +30,7 @@ auto-build 가 이 파일로 진행 상태를 추적/재개한다.
 | P19 RAG evidence 색인 | [x] | [x] | `HashingEmbedder`(결정적 lexical) + `rag_index`(evidence→pgvector 색인/검색), VectorStore 테이블 분리. 단위 + pg-compat 검증 |
 | P20 예측 등록 루프 | [x] | [x] | predictions 테이블/repo + Curator.register_active + 사이클 연동(calibration_repo) + `/predictions`. 캘리브레이션 등록 경로 완성. 통합테스트 그린 |
 | P21 결과 기록·채점 | [x] | [x] | Curator.record_outcome + `POST /predictions/{id}/outcome` → 채점 후 스코어카드 반영. 캘리브레이션 루프(등록→채점) 완성. 통합테스트 그린 |
+| P22 라이브 커넥터(EDGAR/FRED) | [x] | [x] | `TI_CONNECTOR_MODE=live`(ADR-0010): EdgarLive(SEC submissions, UA 필수)+FredLive(시리즈 제목 포함) + 재시도/백오프 + 캐시 폴백. MockTransport 단위테스트 그린, fixture 기본 경로 무변경 |
 
 ## 사전점검 — 현재 상태 판단 (2026-06-05)
 - 레포 종합: `src/turtle_insight/` 41개 모듈 존재하나 `domain/`·`storage/`·`agents/`·`connectors/`·`services/`는 전부 docstring 스텁("Implemented in P*"). 실로직은 `config/settings.py`(+`services/validation.py` R1 스텁)뿐.

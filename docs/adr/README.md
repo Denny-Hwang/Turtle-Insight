@@ -52,6 +52,12 @@
 - **결정**: (1) 리포지토리는 SQLAlchemy 엔진 기반이라 `from_url`로 SQLite/Postgres 공용 — 관계형 코어 테이블은 두 DB에서 동일. (2) 마이그레이션은 Alembic(`alembic upgrade head`, `make migrate`); 초기 리비전은 모델 메타데이터로 테이블 생성(이후 컬럼 단위 autogenerate). (3) **pgvector는 Postgres 전용**: `storage/rag.py`의 `VectorStore`가 `vector` 확장+`embeddings` 테이블을 별도 관리(공용 Base 밖). 벡터는 텍스트로 전달 후 `::vector` 캐스트 → 추가 파이썬 드라이버 의존 없음(psycopg만). 임베딩은 외부 모델이 공급. (4) CI `pg-compat` 잡이 pgvector 이미지 서비스로 마이그레이션+왕복+근접검색을 검증; 로컬 SQLite 테스트는 `TI_TEST_PG_URL` 없으면 skip. docker-compose로 postgres+redis 제공.
 - **결과**: SQLite 경로 무변경(회귀 없음)으로 Postgres+pgvector를 추가. RAG 검색 substrate 확보. 임베딩 모델 연동·시계열 시세는 후속.
 
+## ADR-0010 — 라이브 커넥터 모드 (EDGAR/FRED) + 오프라인 캐시 폴백
+- **상태**: accepted
+- **맥락**: MVP 커넥터는 픽스처 재생(P3)이라 제품이 현실 데이터와 연결되지 않는다(P22 이전 리뷰의 P0-1). 단, CI 결정성(라이브 호출 금지)·ToS 준수(전문 미저장)·오프라인 내성(NFR)은 유지해야 한다.
+- **결정**: (1) `TI_CONNECTOR_MODE`(기본 `fixture`)로 모드 분리 — `live`는 **공공/정부 API만**(SEC EDGAR submissions, FRED observations; 퍼블릭 도메인 데이터라 링크+사실 요약 저장이 ToS-안전). (2) `connectors/live.py`의 `LiveConnector`가 재시도+백오프 GET, 그리고 **정규화된 시그널의 JSON 캐시**(`TI_CACHE_DIR`)를 관리 — 실패 시 직전 캐시 재생으로 강등(사이클 중단 금지). (3) EDGAR는 SEC fair-access 정책에 따라 `TI_EDGAR_USER_AGENT` 필수, 워치리스트(`TI_EDGAR_TICKERS`)의 10-K/10-Q/8-K 메타데이터만 수집. FRED는 시리즈 제목을 요약에 포함해 Scout 키워드 라우팅(`power` 등)이 동작. (4) live 모드는 EDGAR+FRED만 구동(캔 데이터를 라이브 사이클에 섞지 않음); dart/market_api/news 라이브는 후속. (5) 테스트는 httpx MockTransport로 라이브 호출 0.
+- **결과**: `make analyze`가 실데이터로 사이클을 돌 수 있고, 기본(fixture) 경로·CI는 무변경. 네트워크 불안정 시 직전 캐시로 강등. 시세/공시(KR) 라이브와 레이트리밋 고도화는 후속 단계.
+
 ## ADR-0009 — 추론 클라이언트 어댑터(주입형 Ollama/Anthropic)
 - **상태**: accepted
 - **맥락**: ADR-0003의 deep/fast 티어링을 실제 백엔드와 연결해야 한다. 단, `services/inference.py` 게이트는 SDK를 직접 import하지 않아야 하고(테스트 용이·의존 분리), 라이브 호출은 CI에서 검증 불가다.

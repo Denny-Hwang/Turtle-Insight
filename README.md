@@ -64,6 +64,8 @@ make run-api          # FastAPI 조회 API (/theses, /theses/{id}/graph, /propos
 
 > 뷰어가 "No theses in the DB yet"를 보이면 먼저 **`make analyze`** 를 실행해 DB(`TI_DB_URL`, 기본 `sqlite:///ti.db`)를 채운다.
 
+> 기본은 픽스처 재생(라이브 IO 없음). **실데이터**는 `.env`에 `TI_CONNECTOR_MODE=live` + `TI_EDGAR_USER_AGENT`/`TI_EDGAR_TICKERS`/`FRED_API_KEY`/`TI_FRED_SERIES`를 설정하면 SEC EDGAR·FRED(공공 API)에서 수집한다(실패 시 직전 캐시 폴백, ADR-0010).
+
 기타 명령: `make lint` · `make test` · `make validate`(R1) · `make sync`/`sync-check` · `make scorecard`(R4) · `make migrate`(Alembic) · `make up`(docker compose: postgres+redis).
 
 ## 상태
